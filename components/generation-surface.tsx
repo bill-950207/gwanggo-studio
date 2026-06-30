@@ -194,7 +194,7 @@ export function GenerationSurface({
       </div>
 
       <div className="absolute inset-x-0 bottom-0 px-4 pb-5 pointer-events-none">
-        <div className="pointer-events-auto mx-auto max-w-3xl rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/90 dark:bg-neutral-900/90 backdrop-blur shadow-xl shadow-black/5 dark:shadow-black/40">
+        <div className="pointer-events-auto mx-auto max-w-4xl rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/90 dark:bg-neutral-900/90 backdrop-blur shadow-xl shadow-black/5 dark:shadow-black/40">
           <div className="flex items-start gap-3 px-4 pt-3.5">
             <button
               title={needsImage ? 'This model needs a reference image' : 'Add reference image'}
@@ -218,7 +218,8 @@ export function GenerationSurface({
             />
           </div>
 
-          <div className="flex items-center gap-2 px-3 pb-3 pt-2.5 overflow-x-auto">
+          <div className="flex items-start gap-2 px-3 pb-3 pt-2.5">
+            <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
             <button
               onClick={onOpenPicker}
               className="shrink-0 flex items-center gap-2 pl-1.5 pr-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 transition"
@@ -254,10 +255,9 @@ export function GenerationSurface({
               <span className="text-sm tabular-nums w-8 text-center">{count}/4</span>
               <button onClick={() => setCount((c) => Math.min(4, c + 1))} className="w-6 h-6 grid place-items-center rounded text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800">+</button>
             </div>
+            </div>
 
-            <div className="flex-1" />
-
-            <button onClick={generate} disabled={busy || !prompt.trim()} className="primary-btn shrink-0 px-5 py-2.5 disabled:opacity-50">
+            <button onClick={generate} disabled={busy || !prompt.trim()} className="primary-btn shrink-0 self-end px-5 py-2.5 disabled:opacity-50">
               <IconSparkle className="w-4 h-4" />
               {t.ws.generate}
               {cost != null && <span className="font-mono ml-0.5">{cost * count}</span>}

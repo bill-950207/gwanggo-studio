@@ -32,6 +32,55 @@ export function costOf(m: Model): number | null {
   return typeof c === 'number' ? c : null
 }
 
+/** Fill in missing control values with each model's form_config defaults. */
+export function resolveValues(m: Model, values: Record<string, unknown> = {}): Record<string, unknown> {
+  const out = { ...values }
+  const fields = (m.form_config?.fields as Array<{ type: string; default?: unknown; options?: unknown[] }>) ?? []
+  for (const f of fields) {
+    if (f.type === 'prompt' || f.type === 'image_upload') continue
+    if (out[f.type] === undefined) out[f.type] = f.default ?? f.options?.[0]
+  }
+  return out
+}
+
+/**
+ * Credit cost for a model given the selected options — mirrors the server
+ * calculator (fixed / quality / per_second / tier_per_second). Returns null if
+ * it can't be determined (e.g. missing option).
+ */
+export function creditCost(m: Model, values: Record<string, unknown> = {}, count = 1): number | null {
+  const cc = m.credit_config as Record<string, unknown> | null | undefined
+  if (!cc) return null
+  const v = resolveValues(m, values)
+  let cost: number | undefined
+
+  switch (cc.type) {
+    case 'fixed':
+      cost = cc.cost as number
+      break
+    case 'quality':
+      cost = (cc.costs as Record<string, number>)?.[v.quality as string]
+      break
+    case 'per_second': {
+      const audio = v.toggle === true || v.generateAudio === true
+      const rates = cc.rates as Record<string, number> | undefined
+      const audioRates = cc.audio_rates as Record<string, number> | undefined
+      const rate = (audio ? audioRates?.[v.resolution as string] : undefined) ?? rates?.[v.resolution as string]
+      const dur = Number(v.duration)
+      if (rate !== undefined && dur > 0) cost = rate * dur
+      break
+    }
+    case 'tier_per_second': {
+      const tiers = cc.tiers as Record<string, Record<string, number>> | undefined
+      const rate = tiers?.[v.tier as string]?.[v.resolution as string]
+      const dur = Number(v.duration)
+      if (rate !== undefined && dur > 0) cost = rate * dur
+      break
+    }
+  }
+  return typeof cost === 'number' ? cost * count : null
+}
+
 // Offline / pre-backend fallback so the catalog always renders.
 export const FALLBACK_IMAGE: Model[] = [
   { slug: 'seedream-5', name: 'Seedream 5', type: 'image', creator: 'ByteDance', credit_config: { cost: 2 } },

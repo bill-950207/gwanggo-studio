@@ -1,7 +1,7 @@
 'use client'
 
 import { useI18n } from '@/lib/i18n'
-import { costOf } from '@/lib/catalog'
+import { creditCost } from '@/lib/catalog'
 import { ModelThumb } from './model-visual'
 import type { Model } from '@/lib/types'
 
@@ -29,7 +29,7 @@ export function ModelPicker({
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {models.map((m) => {
             const soon = m.is_coming_soon
-            const cost = costOf(m)
+            const cost = creditCost(m)
             const active = m.slug === current
             return (
               <button

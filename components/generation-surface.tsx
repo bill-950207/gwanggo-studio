@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useI18n } from '@/lib/i18n'
 import { useStudio } from '@/lib/studio'
 import { api, ApiError } from '@/lib/api'
-import { gradientFor, costOf } from '@/lib/catalog'
+import { gradientFor, creditCost } from '@/lib/catalog'
 import type { Model, Task } from '@/lib/types'
 import { IconSparkle, IconChevronDown, IconImage } from './icons'
 import { ModelLogo } from './model-visual'
@@ -81,7 +81,7 @@ export function GenerationSurface({
   const pollers = useRef<ReturnType<typeof setInterval>[]>([])
   useEffect(() => () => pollers.current.forEach(clearInterval), [])
 
-  const cost = costOf(model)
+  const cost = creditCost(model, values, count)
   const busy = slots.some((s) => s.status === 'pending')
 
   function cycleField(f: FormField) {
@@ -260,7 +260,7 @@ export function GenerationSurface({
             <button onClick={generate} disabled={busy || !prompt.trim()} className="primary-btn shrink-0 self-end px-5 py-2.5 disabled:opacity-50">
               <IconSparkle className="w-4 h-4" />
               {t.ws.generate}
-              {cost != null && <span className="font-mono ml-0.5">{cost * count}</span>}
+              {cost != null && <span className="font-mono ml-0.5">{cost}</span>}
             </button>
           </div>
           {error && <p className="px-4 pb-3 -mt-1 text-xs text-red-600">{error}</p>}

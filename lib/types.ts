@@ -42,3 +42,14 @@ export interface GenerateResult {
   task_id: string
   credits_used: number
 }
+
+export interface Example {
+  id: string
+  model: string
+  prompt: string | null
+  input_image: string | null
+  input_video: string | null
+  output: string
+  output_type: 'image' | 'video'
+  thumbnail: string | null
+}

@@ -48,6 +48,20 @@ export const zh: Dict = {
     canvasHint: '点击生成以预览',
     credits: '积分',
   },
+  ex: {
+    howItWorks: '使用方法',
+    realResults: '该模型的真实生成结果',
+    input: '输入',
+    output: '结果',
+    start: '开始创作 —',
+    startSub: '描述场景、人物、氛围或风格，即可看到生成结果。',
+    steps: {
+      motion: ['上传视频', '选择人脸和片段', 'AI 替换人物'],
+      i2v: ['上传图片', '描述动作', 'AI 生成视频'],
+      edit: ['上传图片', '描述修改', 'AI 生成结果'],
+      text: ['选择模型', '描述场景', 'AI 生成'],
+    },
+  },
   connect: {
     title: '连接你的账户',
     desc: '粘贴 API 密钥以连接此设备。密钥仅保存在本地。',

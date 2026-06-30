@@ -46,6 +46,20 @@ export const en = {
     canvasHint: 'Press Generate to preview',
     credits: 'credits',
   },
+  ex: {
+    howItWorks: 'How it works',
+    realResults: 'Real results from this model',
+    input: 'Input',
+    output: 'Result',
+    start: 'Start creating with',
+    startSub: 'Describe a scene, character, mood, or style — and watch it come to life.',
+    steps: {
+      motion: ['Upload a video', 'Pick a face and segment', 'AI transforms the person'],
+      i2v: ['Upload an image', 'Describe the motion', 'AI animates it into video'],
+      edit: ['Upload an image', 'Describe the edit', 'AI generates the result'],
+      text: ['Choose a model', 'Describe your scene', 'AI generates it'],
+    },
+  },
   connect: {
     title: 'Connect your account',
     desc: 'Paste your API key to link this device. The key is stored locally only.',

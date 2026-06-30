@@ -1,7 +1,13 @@
 import { getKey } from './auth'
-import type { Model, Me, Task, GenerateResult } from './types'
+import type { Model, Me, Task, GenerateResult, Example } from './types'
 
 const BASE = process.env.NEXT_PUBLIC_API_URL || ''
+
+/** Resolve a media URL from the API. Relative paths (proxy URLs) get the API base prepended. */
+export function mediaUrl(u: string | null | undefined): string {
+  if (!u) return ''
+  return u.startsWith('/') ? BASE + u : u
+}
 
 export class ApiError extends Error {
   status: number
@@ -33,6 +39,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   models: () => request<{ models: Model[] }>('/api/v1/models'),
+  examples: (model: string, limit = 6) =>
+    request<{ examples: Example[] }>(
+      `/api/v1/examples?model=${encodeURIComponent(model)}&limit=${limit}`
+    ),
   me: () => request<Me>('/api/v1/me'),
   generateImage: (body: Record<string, unknown>) =>
     request<GenerateResult>('/api/v1/generate/image', { method: 'POST', body: JSON.stringify(body) }),

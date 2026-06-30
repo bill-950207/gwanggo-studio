@@ -30,7 +30,7 @@ npm run dev                     # http://localhost:3000
 Then open the app, click the avatar, and paste an API key. The key is stored
 locally on your device and sent only as a Bearer token to the API.
 
-**Get a key:** sign in at [gwanggo.ai](https://gwanggo.ai) → API keys → create.
+**Get a key:** sign in at [gwanggo.jocoding.io](https://gwanggo.jocoding.io) → API keys → create.
 New accounts get free credits to try the full workflow.
 
 ## How it works
@@ -53,8 +53,8 @@ backend too.
 
 | Variable                     | Default                                  | Purpose                      |
 | ---------------------------- | ---------------------------------------- | ---------------------------- |
-| `NEXT_PUBLIC_API_URL`        | `https://api.gwanggo.ai`                 | Where generation requests go |
-| `NEXT_PUBLIC_DASHBOARD_URL`  | `https://gwanggo.ai/dashboard/api-keys`  | Where "Get a key" links to   |
+| `NEXT_PUBLIC_API_URL`        | `https://gwanggo.jocoding.io`            | Where generation requests go |
+| `NEXT_PUBLIC_DASHBOARD_URL`  | `https://gwanggo.jocoding.io/dashboard/api-keys`  | Where "Get a key" links to   |
 
 ## Stack
 

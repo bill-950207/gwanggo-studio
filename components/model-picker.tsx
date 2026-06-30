@@ -1,0 +1,64 @@
+'use client'
+
+import { useI18n } from '@/lib/i18n'
+import { gradientFor, costOf } from '@/lib/catalog'
+import type { Model } from '@/lib/types'
+
+export function ModelPicker({
+  open,
+  models,
+  current,
+  onPick,
+  onClose,
+}: {
+  open: boolean
+  models: Model[]
+  current: string
+  onPick: (m: Model) => void
+  onClose: () => void
+}) {
+  const { t } = useI18n()
+  if (!open) return null
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center p-4">
+      <div className="absolute inset-0 bg-neutral-900/40 dark:bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-3xl max-h-[80vh] overflow-y-auto rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5 shadow-2xl fade-up">
+        <h2 className="text-base font-bold tracking-tight mb-4">Choose a model</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {models.map((m) => {
+            const soon = m.is_coming_soon
+            const cost = costOf(m)
+            const active = m.slug === current
+            return (
+              <button
+                key={m.slug}
+                disabled={soon}
+                onClick={() => {
+                  onPick(m)
+                  onClose()
+                }}
+                className={`text-left rounded-xl border overflow-hidden transition disabled:opacity-50 ${
+                  active
+                    ? 'border-neutral-900 dark:border-white ring-1 ring-neutral-900 dark:ring-white'
+                    : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700'
+                }`}
+              >
+                <div className={`aspect-[4/3] grain bg-gradient-to-br ${gradientFor(m.name)}`} />
+                <div className="p-2.5">
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-sm font-semibold truncate">{m.name}</span>
+                    {cost != null && <span className="shrink-0 text-[11px] font-mono text-neutral-400">{cost}cr</span>}
+                  </div>
+                  <div className="text-xs text-neutral-400 truncate">
+                    {t.hub.by} {m.creator}
+                  </div>
+                </div>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}

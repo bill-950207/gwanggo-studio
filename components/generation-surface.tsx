@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { useI18n } from '@/lib/i18n'
 import { useStudio } from '@/lib/studio'
 import { api, ApiError } from '@/lib/api'
@@ -65,6 +65,9 @@ export function GenerationSurface({
   const [count, setCount] = useState(1)
   const [slots, setSlots] = useState<Slot[]>([])
   const [error, setError] = useState('')
+  const [imageUrl, setImageUrl] = useState('')
+  const [uploading, setUploading] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
 
   // Reset controls to each model's defaults when the model changes.
   useEffect(() => {
@@ -76,6 +79,7 @@ export function GenerationSurface({
     setValues(init)
     setSlots([])
     setError('')
+    setImageUrl('')
   }, [model.slug, fields])
 
   const pollers = useRef<ReturnType<typeof setInterval>[]>([])
@@ -97,7 +101,36 @@ export function GenerationSurface({
       const key = BODY_KEY[f.type]
       if (key && values[f.type] !== undefined && values[f.type] !== '') body[key] = values[f.type]
     }
+    if (imageUrl) {
+      // the image field key varies by model
+      if (model.slug === 'seedance-1.5-pro') body.imageUrls = [imageUrl]
+      else if (model.slug === 'vidu-q3') body.image = imageUrl
+      else body.imageUrl = imageUrl
+    }
     return body
+  }
+
+  async function handleFile(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!connected) return onNeedConnect()
+    setUploading(true)
+    setError('')
+    try {
+      const dataUrl = await new Promise<string>((res, rej) => {
+        const r = new FileReader()
+        r.onload = () => res(r.result as string)
+        r.onerror = rej
+        r.readAsDataURL(file)
+      })
+      const { url } = await api.upload(dataUrl)
+      setImageUrl(url)
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Upload failed')
+    } finally {
+      setUploading(false)
+      if (fileRef.current) fileRef.current.value = ''
+    }
   }
 
   async function runOne(index: number) {
@@ -196,16 +229,36 @@ export function GenerationSurface({
       <div className="absolute inset-x-0 bottom-0 px-4 pb-5 pointer-events-none">
         <div className="pointer-events-auto mx-auto max-w-4xl rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/90 dark:bg-neutral-900/90 backdrop-blur shadow-xl shadow-black/5 dark:shadow-black/40">
           <div className="flex items-start gap-3 px-4 pt-3.5">
-            <button
-              title={needsImage ? 'This model needs a reference image' : 'Add reference image'}
-              className={`mt-0.5 grid place-items-center w-7 h-7 rounded-lg border transition shrink-0 ${
-                needsImage
-                  ? 'border-amber-400 text-amber-500'
-                  : 'border-neutral-200 dark:border-neutral-700 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
-              }`}
-            >
-              <IconImage className="w-4 h-4" />
-            </button>
+            <input ref={fileRef} type="file" accept="image/*" hidden onChange={handleFile} />
+            {imageUrl ? (
+              <div className="mt-0.5 relative w-9 h-9 rounded-lg overflow-hidden border border-neutral-200 dark:border-neutral-700 shrink-0 group/img">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={imageUrl} alt="" className="w-full h-full object-cover" />
+                <button
+                  onClick={() => setImageUrl('')}
+                  className="absolute inset-0 grid place-items-center bg-black/50 text-white text-xs opacity-0 group-hover/img:opacity-100 transition"
+                >
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => fileRef.current?.click()}
+                disabled={uploading}
+                title={needsImage ? 'This model needs a reference image' : 'Add reference image'}
+                className={`mt-0.5 grid place-items-center w-9 h-9 rounded-lg border transition shrink-0 disabled:opacity-50 ${
+                  needsImage
+                    ? 'border-amber-400 text-amber-500'
+                    : 'border-neutral-200 dark:border-neutral-700 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
+                }`}
+              >
+                {uploading ? (
+                  <span className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                ) : (
+                  <IconImage className="w-4 h-4" />
+                )}
+              </button>
+            )}
             <textarea
               rows={1}
               value={prompt}

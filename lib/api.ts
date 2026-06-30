@@ -39,4 +39,7 @@ export const api = {
   generateVideo: (body: Record<string, unknown>) =>
     request<GenerateResult>('/api/v1/generate/video', { method: 'POST', body: JSON.stringify(body) }),
   task: (id: string) => request<Task>(`/api/v1/tasks/${encodeURIComponent(id)}`),
+  upload: (dataUrl: string) =>
+    request<{ url: string }>('/api/v1/upload', { method: 'POST', body: JSON.stringify({ dataUrl }) }),
 }
+

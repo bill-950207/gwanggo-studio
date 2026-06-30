@@ -1,7 +1,8 @@
 'use client'
 
 import { useI18n } from '@/lib/i18n'
-import { gradientFor, costOf } from '@/lib/catalog'
+import { costOf } from '@/lib/catalog'
+import { ModelThumb } from './model-visual'
 import type { Model } from '@/lib/types'
 
 export function ModelPicker({
@@ -44,7 +45,7 @@ export function ModelPicker({
                     : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700'
                 }`}
               >
-                <div className={`aspect-[4/3] grain bg-gradient-to-br ${gradientFor(m.name)}`} />
+                <ModelThumb model={m} className="aspect-[4/3]" />
                 <div className="p-2.5">
                   <div className="flex items-center justify-between gap-1">
                     <span className="text-sm font-semibold truncate">{m.name}</span>

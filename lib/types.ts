@@ -14,6 +14,8 @@ export interface Model {
   credit_config?: ModelCreditConfig | null
   form_config?: Record<string, unknown> | null
   is_coming_soon?: boolean
+  thumbnail_url?: string | null
+  logo_url?: string | null
 }
 
 export interface Me {

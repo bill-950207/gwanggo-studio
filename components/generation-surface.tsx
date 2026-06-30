@@ -7,6 +7,7 @@ import { api, ApiError } from '@/lib/api'
 import { gradientFor, costOf } from '@/lib/catalog'
 import type { Model, Task } from '@/lib/types'
 import { IconSparkle, IconChevronDown, IconImage } from './icons'
+import { ModelLogo } from './model-visual'
 
 type Ratio = '1:1' | '16:9' | '9:16' | '4:3' | '3:4'
 type Slot = { status: 'pending' | 'done' | 'error'; url?: string; error?: string }
@@ -169,7 +170,7 @@ export function GenerationSurface({
               onClick={onOpenPicker}
               className="shrink-0 flex items-center gap-2 pl-1.5 pr-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 transition"
             >
-              <span className={`w-5 h-5 rounded bg-gradient-to-br ${gradientFor(model.name)}`} />
+              <ModelLogo model={model} size={20} />
               <span className="text-sm font-medium whitespace-nowrap">{model.name}</span>
               <IconChevronDown className="w-3.5 h-3.5 text-neutral-400" />
             </button>
@@ -232,9 +233,14 @@ function EmptyState({ model }: { model: Model }) {
           {[0, 1, 2, 3].map((i) => (
             <div
               key={i}
-              className={`w-28 h-36 rounded-2xl grain bg-gradient-to-br ${gradientFor(model.name + i)} border-2 border-white dark:border-neutral-950 shadow-lg`}
+              className={`w-28 h-36 rounded-2xl overflow-hidden grain bg-gradient-to-br ${gradientFor(model.name + i)} border-2 border-white dark:border-neutral-950 shadow-lg`}
               style={{ transform: `rotate(${(i - 1.5) * 7}deg)` }}
-            />
+            >
+              {model.thumbnail_url && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={model.thumbnail_url} alt="" className="w-full h-full object-cover" />
+              )}
+            </div>
           ))}
         </div>
         <h2 className="text-2xl font-bold tracking-tight">

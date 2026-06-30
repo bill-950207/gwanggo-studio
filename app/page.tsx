@@ -26,11 +26,16 @@ export default function Studio() {
   }
   const currentList = lists[tab]
 
-  // Default the selected model to the first of the current tab (and when models load).
+  // Keep the selected model in sync with the current tab's list. Critically, when
+  // the live catalog replaces the fallback, re-bind to the LIVE object (same slug)
+  // so logo_url / thumbnail_url are present instead of the bare fallback entry.
   useEffect(() => {
-    if (currentList.length && (!model || !currentList.some((m) => m.slug === model.slug))) {
-      const firstUsable = currentList.find((m) => !m.is_coming_soon) ?? currentList[0]
-      setModel(firstUsable)
+    if (!currentList.length) return
+    const live = model ? currentList.find((m) => m.slug === model.slug) : undefined
+    if (live) {
+      if (live !== model) setModel(live)
+    } else {
+      setModel(currentList.find((m) => !m.is_coming_soon) ?? currentList[0])
     }
   }, [currentList, model])
 

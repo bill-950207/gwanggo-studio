@@ -52,25 +52,17 @@ export function StudioProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
-    let mounted = true
+    // Note: no mounted-guard — under React StrictMode the dev double-invoke would
+    // otherwise drop the resolved catalog and leave us on the fallback list.
     api
       .models()
       .then(({ models }) => {
-        if (!mounted) return
         setImageModels(models.filter((m) => m.type === 'image'))
         setVideoModels(models.filter((m) => m.type === 'video'))
       })
-      .catch(() => {
-        if (!mounted) return
-        setModelsError(true)
-      })
-      .finally(() => {
-        if (mounted) setLoadingModels(false)
-      })
+      .catch(() => setModelsError(true))
+      .finally(() => setLoadingModels(false))
     refreshMe()
-    return () => {
-      mounted = false
-    }
   }, [refreshMe])
 
   const connect = useCallback(async (key: string) => {

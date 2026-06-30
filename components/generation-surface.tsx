@@ -436,14 +436,18 @@ function EmptyState({
   const steps = t.ex.steps[shape]
   // Chrome can't decode .mov; only mp4/webm inputs are worth showing as video.
   const playable = (u?: string | null) => !!u && /\.(mp4|webm|m4v)/i.test(u)
-  // The hero example: first one that carries an input we can actually render.
-  const featured = exs.find((e) => e.input_image || playable(e.input_video)) ?? exs[0] ?? null
-  const gallery = exs.filter((e) => e.id !== featured?.id).slice(0, 4)
-  // Inputs shown beside the result: reference image and/or playable source video.
-  const inputs: { url: string; kind: 'image' | 'video'; label: string }[] = []
-  if (featured?.input_image) inputs.push({ url: featured.input_image, kind: 'image', label: t.ex.inputImage })
-  if (featured?.input_video && playable(featured.input_video))
-    inputs.push({ url: featured.input_video, kind: 'video', label: t.ex.inputVideo })
+  // Examples that carry a renderable input → shown as input(s) → result blocks.
+  const featured = exs.filter((e) => e.input_image || playable(e.input_video))
+  // Text-to-X models have no inputs → fall back to an outputs gallery.
+  const gallery = featured.length ? [] : exs.slice(0, 4)
+
+  const inputsOf = (e: Example) => {
+    const arr: { url: string; kind: 'image' | 'video'; label: string }[] = []
+    if (e.input_image) arr.push({ url: e.input_image, kind: 'image', label: t.ex.inputImage })
+    if (e.input_video && playable(e.input_video))
+      arr.push({ url: e.input_video, kind: 'video', label: t.ex.inputVideo })
+    return arr
+  }
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -474,36 +478,33 @@ function EmptyState({
         </div>
       </div>
 
-      {/* Featured input → output preview from real user data */}
-      {featured ? (
-        <div className="mt-9">
-          <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
-            {inputs.map((inp) => (
-              <div key={inp.label} className="flex flex-col items-center gap-2">
-                <div className="relative w-32 sm:w-40 aspect-square rounded-2xl overflow-hidden border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-950">
-                  <MediaTile url={inp.url} kind={inp.kind} />
+      {/* Real input(s) → output preview from real user data */}
+      {featured.length > 0 ? (
+        <div className="mt-9 space-y-8">
+          {featured.map((ex) => (
+            <div key={ex.id}>
+              <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
+                {inputsOf(ex).map((inp) => (
+                  <div key={inp.label} className="flex flex-col items-center gap-2">
+                    <div className="relative w-32 sm:w-40 aspect-square rounded-2xl overflow-hidden border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-950">
+                      <MediaTile url={inp.url} kind={inp.kind} />
+                    </div>
+                    <span className="text-[11px] font-medium text-neutral-400">{inp.label}</span>
+                  </div>
+                ))}
+                <IconSparkle className="w-5 h-5 text-neutral-300 dark:text-neutral-600 shrink-0" />
+                <div className="flex flex-col items-center gap-2">
+                  <div className="relative w-40 sm:w-52 aspect-square rounded-2xl overflow-hidden border-2 border-neutral-900/10 dark:border-white/10 bg-neutral-100 dark:bg-neutral-950 shadow-lg">
+                    <MediaTile url={ex.output} kind={ex.output_type} />
+                  </div>
+                  <span className="text-[11px] font-medium text-neutral-400">{t.ex.output}</span>
                 </div>
-                <span className="text-[11px] font-medium text-neutral-400">{inp.label}</span>
               </div>
-            ))}
-            {inputs.length > 0 && (
-              <IconSparkle className="w-5 h-5 text-neutral-300 dark:text-neutral-600 shrink-0" />
-            )}
-            <div className="flex flex-col items-center gap-2">
-              <div className="relative w-40 sm:w-52 aspect-square rounded-2xl overflow-hidden border-2 border-neutral-900/10 dark:border-white/10 bg-neutral-100 dark:bg-neutral-950 shadow-lg">
-                <MediaTile url={featured.output} kind={featured.output_type} />
-              </div>
-              <span className="text-[11px] font-medium text-neutral-400">{t.ex.output}</span>
             </div>
-          </div>
-          {featured.prompt && (
-            <p className="mt-4 mx-auto max-w-lg text-center text-xs text-neutral-500 italic line-clamp-2">
-              “{featured.prompt}”
-            </p>
-          )}
+          ))}
         </div>
-      ) : (
-        // No real data yet → keep the original gradient fan.
+      ) : gallery.length === 0 ? (
+        // No real data at all → keep the original gradient fan.
         <div className="mt-10 flex justify-center -space-x-5">
           {(fallbackThumbs.length ? fallbackThumbs.slice(0, 3) : [null, null, null]).map((url, i) => (
             <div
@@ -518,7 +519,7 @@ function EmptyState({
             </div>
           ))}
         </div>
-      )}
+      ) : null}
 
       {/* More real results */}
       {gallery.length > 0 && (

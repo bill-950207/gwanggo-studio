@@ -22,13 +22,10 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE)
 
   useEffect(() => {
+    // English is the default face. Honor a previously chosen locale, but do not
+    // auto-switch by browser language.
     const saved = localStorage.getItem('locale') as Locale | null
-    if (saved && saved in DICTS) {
-      setLocaleState(saved)
-      return
-    }
-    const browser = navigator.language.slice(0, 2) as Locale
-    if (browser in DICTS) setLocaleState(browser)
+    if (saved && saved in DICTS) setLocaleState(saved)
   }, [])
 
   function setLocale(l: Locale) {

@@ -81,6 +81,40 @@ export function creditCost(m: Model, values: Record<string, unknown> = {}, count
   return typeof cost === 'number' ? cost * count : null
 }
 
+/**
+ * Credit rate for display. Video (per_second / tier_per_second) returns a
+ * per-second rate; image (fixed / quality) returns a flat cost.
+ */
+export function creditRate(
+  m: Model,
+  values: Record<string, unknown> = {}
+): { rate: number; perSecond: boolean } | null {
+  const cc = m.credit_config as Record<string, unknown> | null | undefined
+  if (!cc) return null
+  const v = resolveValues(m, values)
+  switch (cc.type) {
+    case 'fixed':
+      return typeof cc.cost === 'number' ? { rate: cc.cost, perSecond: false } : null
+    case 'quality': {
+      const r = (cc.costs as Record<string, number>)?.[v.quality as string]
+      return typeof r === 'number' ? { rate: r, perSecond: false } : null
+    }
+    case 'per_second': {
+      const audio = v.toggle === true || v.generateAudio === true
+      const audioRates = cc.audio_rates as Record<string, number> | undefined
+      const rates = cc.rates as Record<string, number> | undefined
+      const r = (audio ? audioRates?.[v.resolution as string] : undefined) ?? rates?.[v.resolution as string]
+      return typeof r === 'number' ? { rate: r, perSecond: true } : null
+    }
+    case 'tier_per_second': {
+      const tiers = cc.tiers as Record<string, Record<string, number>> | undefined
+      const r = tiers?.[v.tier as string]?.[v.resolution as string]
+      return typeof r === 'number' ? { rate: r, perSecond: true } : null
+    }
+  }
+  return null
+}
+
 // Offline / pre-backend fallback so the catalog always renders.
 export const FALLBACK_IMAGE: Model[] = [
   { slug: 'seedream-5', name: 'Seedream 5', type: 'image', creator: 'ByteDance', credit_config: { cost: 2 } },

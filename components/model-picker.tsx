@@ -1,7 +1,7 @@
 'use client'
 
 import { useI18n } from '@/lib/i18n'
-import { creditCost } from '@/lib/catalog'
+import { creditRate } from '@/lib/catalog'
 import { ModelThumb } from './model-visual'
 import type { Model } from '@/lib/types'
 
@@ -29,7 +29,7 @@ export function ModelPicker({
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {models.map((m) => {
             const soon = m.is_coming_soon
-            const cost = creditCost(m)
+            const r = creditRate(m)
             const active = m.slug === current
             return (
               <button
@@ -49,7 +49,11 @@ export function ModelPicker({
                 <div className="p-2.5">
                   <div className="flex items-center justify-between gap-1">
                     <span className="text-sm font-semibold truncate">{m.name}</span>
-                    {cost != null && <span className="shrink-0 text-[11px] font-mono text-neutral-400">{cost}cr</span>}
+                    {r != null && (
+                      <span className="shrink-0 text-[11px] font-mono text-neutral-400">
+                        {r.perSecond ? `${r.rate}/s` : `${r.rate}cr`}
+                      </span>
+                    )}
                   </div>
                   <div className="text-xs text-neutral-400 truncate">
                     {t.hub.by} {m.creator}

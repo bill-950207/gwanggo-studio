@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { useI18n } from '@/lib/i18n'
 import { useStudio } from '@/lib/studio'
 import { api, ApiError } from '@/lib/api'
-import { gradientFor, creditCost } from '@/lib/catalog'
+import { gradientFor, creditRate } from '@/lib/catalog'
 import type { Model, Task } from '@/lib/types'
 import { IconSparkle, IconChevronDown, IconImage } from './icons'
 import { ModelLogo } from './model-visual'
@@ -85,15 +85,8 @@ export function GenerationSurface({
   const pollers = useRef<ReturnType<typeof setInterval>[]>([])
   useEffect(() => () => pollers.current.forEach(clearInterval), [])
 
-  const cost = creditCost(model, values, count)
+  const rate = creditRate(model, values)
   const busy = slots.some((s) => s.status === 'pending')
-
-  function cycleField(f: FormField) {
-    if (!f.options?.length) return
-    const cur = values[f.type] ?? f.default ?? f.options[0]
-    const next = f.options[(f.options.indexOf(cur as string | number) + 1) % f.options.length]
-    setValues((v) => ({ ...v, [f.type]: next }))
-  }
 
   function buildBody(): Record<string, unknown> {
     const body: Record<string, unknown> = { model: model.slug, prompt }
@@ -205,13 +198,6 @@ export function GenerationSurface({
     for (let i = 0; i < count; i++) runOne(i)
   }
 
-  function fieldLabel(f: FormField): string {
-    const val = values[f.type] ?? f.default ?? f.options?.[0]
-    if (f.type === 'toggle') return values[f.type] ? 'Audio on' : 'Audio off'
-    if (f.type === 'duration') return `${val}s`
-    return String(val)
-  }
-
   return (
     <div className="relative flex flex-col h-full">
       <div className="flex-1 overflow-y-auto px-6 pt-8 pb-44">
@@ -290,16 +276,15 @@ export function GenerationSurface({
                   data-active={!!values.toggle}
                   className="ratio shrink-0 px-3 py-1.5"
                 >
-                  {fieldLabel(f)}
+                  {values.toggle ? 'Audio on' : 'Audio off'}
                 </button>
               ) : (
-                <Pill
+                <FieldSelect
                   key={i}
-                  onClick={() => cycleField(f)}
-                  className={f.type === 'quality' || f.type === 'tier' ? 'capitalize' : ''}
-                >
-                  {fieldLabel(f)}
-                </Pill>
+                  field={f}
+                  value={values[f.type]}
+                  onChange={(val) => setValues((v) => ({ ...v, [f.type]: val }))}
+                />
               )
             )}
 
@@ -313,7 +298,11 @@ export function GenerationSurface({
             <button onClick={generate} disabled={busy || !prompt.trim()} className="primary-btn shrink-0 self-end px-5 py-2.5 disabled:opacity-50">
               <IconSparkle className="w-4 h-4" />
               {t.ws.generate}
-              {cost != null && <span className="font-mono ml-0.5">{cost}</span>}
+              {rate && (
+                <span className="font-mono ml-0.5">
+                  {rate.perSecond ? `${rate.rate}/s` : rate.rate * count}
+                </span>
+              )}
             </button>
           </div>
           {error && <p className="px-4 pb-3 -mt-1 text-xs text-red-600">{error}</p>}
@@ -323,14 +312,34 @@ export function GenerationSurface({
   )
 }
 
-function Pill({ children, onClick, className = '' }: { children: React.ReactNode; onClick: () => void; className?: string }) {
+function FieldSelect({
+  field,
+  value,
+  onChange,
+}: {
+  field: FormField
+  value: string | number | boolean | undefined
+  onChange: (v: string | number) => void
+}) {
+  const opts = field.options ?? []
+  if (!opts.length) return null // no options → nothing to pick, skip the control
+  const isNum = typeof opts[0] === 'number'
+  const cur = value ?? field.default ?? opts[0] ?? ''
   return (
-    <button
-      onClick={onClick}
-      className={`shrink-0 px-3 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 text-sm font-medium hover:border-neutral-300 dark:hover:border-neutral-600 transition ${className}`}
-    >
-      {children}
-    </button>
+    <div className="relative shrink-0">
+      <select
+        value={String(cur)}
+        onChange={(e) => onChange(isNum ? Number(e.target.value) : e.target.value)}
+        className="appearance-none pl-3 pr-8 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-transparent text-sm font-medium capitalize cursor-pointer hover:border-neutral-300 dark:hover:border-neutral-600 transition outline-none"
+      >
+        {opts.map((o) => (
+          <option key={String(o)} value={String(o)}>
+            {field.type === 'duration' ? `${o}s` : String(o)}
+          </option>
+        ))}
+      </select>
+      <IconChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400" />
+    </div>
   )
 }
 

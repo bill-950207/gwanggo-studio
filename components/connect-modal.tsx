@@ -13,7 +13,9 @@ export function ConnectModal({ open, onClose }: { open: boolean; onClose: () => 
   const [error, setError] = useState('')
 
   if (!open) return null
-  const dashboard = process.env.NEXT_PUBLIC_DASHBOARD_URL || '#'
+  // Where users create/copy an API key — the hosted dashboard. Falls back to the
+  // official URL so "Get a key" always works, even without env config.
+  const dashboard = process.env.NEXT_PUBLIC_DASHBOARD_URL || 'https://gwanggo.ai/dashboard/api-keys'
 
   async function submit() {
     if (!key.trim()) return

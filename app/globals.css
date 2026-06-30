@@ -1,0 +1,93 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    font-feature-settings: "ss01", "cv01";
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(120, 120, 120, 0.25);
+    border-radius: 99px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+}
+
+@layer components {
+  /* Sidebar nav item */
+  .nav-item {
+    @apply w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-neutral-600 dark:text-neutral-400 transition-colors;
+  }
+  .nav-item:hover {
+    @apply bg-black/[0.04] dark:bg-white/[0.05] text-neutral-900 dark:text-white;
+  }
+  .nav-item[data-active="true"] {
+    @apply bg-neutral-900 dark:bg-white text-white dark:text-neutral-900;
+  }
+
+  /* Aspect-ratio pill */
+  .ratio {
+    @apply flex items-center justify-center gap-1.5 py-2 rounded-lg border text-sm font-medium border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 transition-colors;
+  }
+  .ratio[data-active="true"] {
+    @apply border-neutral-900 dark:border-white text-neutral-900 dark:text-white bg-neutral-50 dark:bg-white/[0.04];
+  }
+
+  .select {
+    @apply flex items-center justify-between px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 text-sm cursor-pointer bg-white dark:bg-neutral-900;
+  }
+
+  .icon-btn {
+    @apply grid place-items-center w-8 h-8 rounded-lg text-neutral-500 transition-colors;
+  }
+  .icon-btn:hover {
+    @apply bg-black/[0.05] dark:bg-white/[0.06] text-neutral-900 dark:text-white;
+  }
+
+  .primary-btn {
+    @apply flex items-center justify-center gap-2 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 font-semibold text-sm hover:opacity-90 active:scale-[0.99] transition shadow-sm;
+  }
+}
+
+@layer utilities {
+  .grain {
+    position: relative;
+  }
+  .grain::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .fade-up {
+    animation: fadeUp 0.5s both;
+  }
+  @keyframes fadeUp {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  .anim-prog {
+    animation: prog 2.6s ease-in-out infinite;
+  }
+  @keyframes prog {
+    0% { width: 8%; }
+    50% { width: 78%; }
+    100% { width: 94%; }
+  }
+}

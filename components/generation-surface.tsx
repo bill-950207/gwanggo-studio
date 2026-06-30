@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useI18n } from '@/lib/i18n'
 import { useStudio } from '@/lib/studio'
 import { api, ApiError } from '@/lib/api'
@@ -9,13 +9,27 @@ import type { Model, Task } from '@/lib/types'
 import { IconSparkle, IconChevronDown, IconImage } from './icons'
 import { ModelLogo } from './model-visual'
 
-type Ratio = '1:1' | '16:9' | '9:16' | '4:3' | '3:4'
 type Slot = { status: 'pending' | 'done' | 'error'; url?: string; error?: string }
 
+interface FormField {
+  type: string
+  required?: boolean
+  options?: Array<string | number>
+  default?: string | number | boolean
+}
+
+// form_config field type → request body key
+const BODY_KEY: Record<string, string> = {
+  aspect_ratio: 'aspectRatio',
+  resolution: 'resolution',
+  duration: 'duration',
+  quality: 'quality',
+  tier: 'tier',
+  toggle: 'generateAudio',
+}
+
 const POLL_MS = 2500
-const MAX_POLLS = 160
-const IMAGE_RATIOS: Ratio[] = ['1:1', '4:3', '3:4', '16:9', '9:16']
-const VIDEO_RATIOS: Ratio[] = ['16:9', '9:16', '1:1']
+const MAX_POLLS = 200
 
 export function GenerationSurface({
   model,
@@ -30,7 +44,14 @@ export function GenerationSurface({
   const { connected, refreshMe, imageModels, videoModels } = useStudio()
   const isVideo = model.type === 'video'
 
-  // 3 distinct example thumbnails (from different models) for the empty-state fan.
+  const fields = useMemo<FormField[]>(
+    () => ((model.form_config?.fields as FormField[] | undefined) ?? []),
+    [model]
+  )
+  const controlFields = fields.filter((f) => f.type !== 'prompt' && f.type !== 'image_upload')
+  const needsImage = fields.some((f) => f.type === 'image_upload' && f.required)
+
+  // 3 distinct example thumbnails for the empty-state fan
   const allThumbs = Array.from(
     new Set([...imageModels, ...videoModels].map((m) => m.thumbnail_url).filter(Boolean) as string[])
   )
@@ -40,29 +61,43 @@ export function GenerationSurface({
       : allThumbs
 
   const [prompt, setPrompt] = useState('')
-  const [ratio, setRatio] = useState<Ratio>('1:1')
-  const [quality, setQuality] = useState<'basic' | 'high'>('basic')
-  const [resolution, setResolution] = useState('720p')
-  const [duration, setDuration] = useState(5)
+  const [values, setValues] = useState<Record<string, string | number | boolean>>({})
   const [count, setCount] = useState(1)
   const [slots, setSlots] = useState<Slot[]>([])
   const [error, setError] = useState('')
 
+  // Reset controls to each model's defaults when the model changes.
+  useEffect(() => {
+    const init: Record<string, string | number | boolean> = {}
+    for (const f of fields) {
+      if (f.type === 'prompt' || f.type === 'image_upload') continue
+      init[f.type] = f.default ?? f.options?.[0] ?? ''
+    }
+    setValues(init)
+    setSlots([])
+    setError('')
+  }, [model.slug, fields])
+
   const pollers = useRef<ReturnType<typeof setInterval>[]>([])
   useEffect(() => () => pollers.current.forEach(clearInterval), [])
 
-  const ratios = isVideo ? VIDEO_RATIOS : IMAGE_RATIOS
   const cost = costOf(model)
   const busy = slots.some((s) => s.status === 'pending')
 
-  function cycle<T>(arr: T[], cur: T, set: (v: T) => void) {
-    set(arr[(arr.indexOf(cur) + 1) % arr.length])
+  function cycleField(f: FormField) {
+    if (!f.options?.length) return
+    const cur = values[f.type] ?? f.default ?? f.options[0]
+    const next = f.options[(f.options.indexOf(cur as string | number) + 1) % f.options.length]
+    setValues((v) => ({ ...v, [f.type]: next }))
   }
 
   function buildBody(): Record<string, unknown> {
-    return isVideo
-      ? { model: model.slug, prompt, aspectRatio: ratio, resolution, duration }
-      : { model: model.slug, prompt, aspectRatio: ratio, quality }
+    const body: Record<string, unknown> = { model: model.slug, prompt }
+    for (const f of controlFields) {
+      const key = BODY_KEY[f.type]
+      if (key && values[f.type] !== undefined && values[f.type] !== '') body[key] = values[f.type]
+    }
+    return body
   }
 
   async function runOne(index: number) {
@@ -137,16 +172,20 @@ export function GenerationSurface({
     for (let i = 0; i < count; i++) runOne(i)
   }
 
+  function fieldLabel(f: FormField): string {
+    const val = values[f.type] ?? f.default ?? f.options?.[0]
+    if (f.type === 'toggle') return values[f.type] ? 'Audio on' : 'Audio off'
+    if (f.type === 'duration') return `${val}s`
+    return String(val)
+  }
+
   return (
     <div className="relative flex flex-col h-full">
-      {/* canvas */}
       <div className="flex-1 overflow-y-auto px-6 pt-8 pb-44">
         {slots.length === 0 ? (
           <EmptyState model={model} examples={examples} />
         ) : (
-          <div
-            className={`mx-auto max-w-4xl grid gap-4 ${slots.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}
-          >
+          <div className={`mx-auto max-w-4xl grid gap-4 ${slots.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
             {slots.map((s, i) => (
               <ResultTile key={i} slot={s} model={model} hint={t.ws.generating} />
             ))}
@@ -154,11 +193,17 @@ export function GenerationSurface({
         )}
       </div>
 
-      {/* bottom prompt bar */}
       <div className="absolute inset-x-0 bottom-0 px-4 pb-5 pointer-events-none">
         <div className="pointer-events-auto mx-auto max-w-3xl rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/90 dark:bg-neutral-900/90 backdrop-blur shadow-xl shadow-black/5 dark:shadow-black/40">
           <div className="flex items-start gap-3 px-4 pt-3.5">
-            <button className="mt-0.5 grid place-items-center w-7 h-7 rounded-lg border border-neutral-200 dark:border-neutral-700 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition shrink-0">
+            <button
+              title={needsImage ? 'This model needs a reference image' : 'Add reference image'}
+              className={`mt-0.5 grid place-items-center w-7 h-7 rounded-lg border transition shrink-0 ${
+                needsImage
+                  ? 'border-amber-400 text-amber-500'
+                  : 'border-neutral-200 dark:border-neutral-700 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
+              }`}
+            >
               <IconImage className="w-4 h-4" />
             </button>
             <textarea
@@ -174,7 +219,6 @@ export function GenerationSurface({
           </div>
 
           <div className="flex items-center gap-2 px-3 pb-3 pt-2.5 overflow-x-auto">
-            {/* model pill */}
             <button
               onClick={onOpenPicker}
               className="shrink-0 flex items-center gap-2 pl-1.5 pr-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 transition"
@@ -184,20 +228,27 @@ export function GenerationSurface({
               <IconChevronDown className="w-3.5 h-3.5 text-neutral-400" />
             </button>
 
-            <Pill onClick={() => cycle(ratios, ratio, setRatio)}>{ratio}</Pill>
-
-            {isVideo ? (
-              <>
-                <Pill onClick={() => cycle(['480p', '720p', '1080p'], resolution, setResolution)}>{resolution}</Pill>
-                <Pill onClick={() => cycle([5, 10], duration, setDuration)}>{duration}s</Pill>
-              </>
-            ) : (
-              <Pill onClick={() => setQuality((q) => (q === 'basic' ? 'high' : 'basic'))} className="capitalize">
-                {quality}
-              </Pill>
+            {controlFields.map((f, i) =>
+              f.type === 'toggle' ? (
+                <button
+                  key={i}
+                  onClick={() => setValues((v) => ({ ...v, toggle: !v.toggle }))}
+                  data-active={!!values.toggle}
+                  className="ratio shrink-0 px-3 py-1.5"
+                >
+                  {fieldLabel(f)}
+                </button>
+              ) : (
+                <Pill
+                  key={i}
+                  onClick={() => cycleField(f)}
+                  className={f.type === 'quality' || f.type === 'tier' ? 'capitalize' : ''}
+                >
+                  {fieldLabel(f)}
+                </Pill>
+              )
             )}
 
-            {/* count */}
             <div className="shrink-0 flex items-center gap-1 px-1 py-1 rounded-lg border border-neutral-200 dark:border-neutral-700">
               <button onClick={() => setCount((c) => Math.max(1, c - 1))} className="w-6 h-6 grid place-items-center rounded text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800">−</button>
               <span className="text-sm tabular-nums w-8 text-center">{count}/4</span>
@@ -206,11 +257,7 @@ export function GenerationSurface({
 
             <div className="flex-1" />
 
-            <button
-              onClick={generate}
-              disabled={busy || !prompt.trim()}
-              className="primary-btn shrink-0 px-5 py-2.5 disabled:opacity-50"
-            >
+            <button onClick={generate} disabled={busy || !prompt.trim()} className="primary-btn shrink-0 px-5 py-2.5 disabled:opacity-50">
               <IconSparkle className="w-4 h-4" />
               {t.ws.generate}
               {cost != null && <span className="font-mono ml-0.5">{cost * count}</span>}

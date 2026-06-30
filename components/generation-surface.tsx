@@ -27,8 +27,17 @@ export function GenerationSurface({
   onNeedConnect: () => void
 }) {
   const { t } = useI18n()
-  const { connected, refreshMe } = useStudio()
+  const { connected, refreshMe, imageModels, videoModels } = useStudio()
   const isVideo = model.type === 'video'
+
+  // 3 distinct example thumbnails (from different models) for the empty-state fan.
+  const allThumbs = Array.from(
+    new Set([...imageModels, ...videoModels].map((m) => m.thumbnail_url).filter(Boolean) as string[])
+  )
+  const examples =
+    allThumbs.length >= 3
+      ? [allThumbs[0], allThumbs[Math.floor(allThumbs.length / 2)], allThumbs[allThumbs.length - 1]]
+      : allThumbs
 
   const [prompt, setPrompt] = useState('')
   const [ratio, setRatio] = useState<Ratio>('1:1')
@@ -133,7 +142,7 @@ export function GenerationSurface({
       {/* canvas */}
       <div className="flex-1 overflow-y-auto px-6 pt-8 pb-44">
         {slots.length === 0 ? (
-          <EmptyState model={model} />
+          <EmptyState model={model} examples={examples} />
         ) : (
           <div
             className={`mx-auto max-w-4xl grid gap-4 ${slots.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}
@@ -225,20 +234,21 @@ function Pill({ children, onClick, className = '' }: { children: React.ReactNode
   )
 }
 
-function EmptyState({ model }: { model: Model }) {
+function EmptyState({ model, examples }: { model: Model; examples: string[] }) {
+  const cards = examples.length ? examples.slice(0, 3) : [null, null, null]
   return (
     <div className="h-full grid place-items-center text-center">
       <div>
-        <div className="flex justify-center -space-x-6 mb-8">
-          {[0, 1, 2, 3].map((i) => (
+        <div className="flex justify-center -space-x-5 mb-8">
+          {cards.map((url, i) => (
             <div
               key={i}
               className={`w-28 h-36 rounded-2xl overflow-hidden grain bg-gradient-to-br ${gradientFor(model.name + i)} border-2 border-white dark:border-neutral-950 shadow-lg`}
-              style={{ transform: `rotate(${(i - 1.5) * 7}deg)` }}
+              style={{ transform: `rotate(${(i - 1) * 8}deg)` }}
             >
-              {model.thumbnail_url && (
+              {url && (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={model.thumbnail_url} alt="" className="w-full h-full object-cover" />
+                <img src={url} alt="" className="w-full h-full object-cover" />
               )}
             </div>
           ))}

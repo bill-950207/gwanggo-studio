@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import { api } from './api'
 import { getKey, setKey, clearKey } from './auth'
-import { FALLBACK_IMAGE, FALLBACK_VIDEO, TRENDING } from './catalog'
+import { FALLBACK_IMAGE, FALLBACK_VIDEO, TRENDING_STUBS, TRENDING_LIVE_SLUGS } from './catalog'
 import type { Model, Me } from './types'
 
 interface StudioState {
@@ -24,7 +24,7 @@ const StudioCtx = createContext<StudioState>({
   connected: false,
   imageModels: FALLBACK_IMAGE,
   videoModels: FALLBACK_VIDEO,
-  trending: TRENDING,
+  trending: TRENDING_STUBS,
   loadingModels: true,
   modelsError: false,
   connect: async () => {},
@@ -81,14 +81,24 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     setMe(null)
   }, [])
 
+  const resolvedImage = imageModels.length ? imageModels : FALLBACK_IMAGE
+  const resolvedVideo = videoModels.length ? videoModels : FALLBACK_VIDEO
+  // Trending = real live models (with form_config) + coming-soon placeholders
+  const trending = [
+    ...(TRENDING_LIVE_SLUGS.map((slug) =>
+      [...resolvedImage, ...resolvedVideo].find((m) => m.slug === slug)
+    ).filter(Boolean) as Model[]),
+    ...TRENDING_STUBS,
+  ]
+
   return (
     <StudioCtx.Provider
       value={{
         me,
         connected: !!me,
-        imageModels: imageModels.length ? imageModels : FALLBACK_IMAGE,
-        videoModels: videoModels.length ? videoModels : FALLBACK_VIDEO,
-        trending: TRENDING,
+        imageModels: resolvedImage,
+        videoModels: resolvedVideo,
+        trending,
         loadingModels,
         modelsError,
         connect,

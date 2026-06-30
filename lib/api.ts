@@ -39,7 +39,23 @@ export const api = {
   generateVideo: (body: Record<string, unknown>) =>
     request<GenerateResult>('/api/v1/generate/video', { method: 'POST', body: JSON.stringify(body) }),
   task: (id: string) => request<Task>(`/api/v1/tasks/${encodeURIComponent(id)}`),
-  upload: (dataUrl: string) =>
-    request<{ url: string }>('/api/v1/upload', { method: 'POST', body: JSON.stringify({ dataUrl }) }),
+  presign: (contentType: string, ext?: string) =>
+    request<{ uploadUrl: string; publicUrl: string }>('/api/v1/upload', {
+      method: 'POST',
+      body: JSON.stringify({ contentType, ext }),
+    }),
+}
+
+/** Presign + direct PUT to R2 (handles large images and videos). Returns the public URL. */
+export async function uploadFile(file: File): Promise<string> {
+  const ext = file.name.split('.').pop()?.toLowerCase()
+  const { uploadUrl, publicUrl } = await api.presign(file.type || 'application/octet-stream', ext)
+  const put = await fetch(uploadUrl, {
+    method: 'PUT',
+    headers: { 'Content-Type': file.type || 'application/octet-stream' },
+    body: file,
+  })
+  if (!put.ok) throw new Error('Upload failed')
+  return publicUrl
 }
 

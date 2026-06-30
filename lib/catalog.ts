@@ -142,10 +142,13 @@ export const FALLBACK_VIDEO: Model[] = [
   { slug: 'ltx-2.3', name: 'LTX 2.3', type: 'video', creator: 'Lightricks', credit_config: { cost: 6 } },
 ]
 
-// Trending tools have no /v1 endpoint yet — curated client-side for now.
-export const TRENDING: Model[] = [
-  { slug: 'kling-3-mc', name: 'Motion Control', type: 'video', creator: 'Kling 3.0 MC', credit_config: { cost: 6 } },
+// Trending placeholders not yet wired to /v1. Real ones (e.g. Motion Control =
+// kling-3-mc) are pulled from the live catalog by the studio provider.
+export const TRENDING_STUBS: Model[] = [
   { slug: 'face-swap', name: 'Face Swap', type: 'video', creator: 'Kling', credit_config: { cost: 5 }, is_coming_soon: true },
   { slug: 'app-ugc', name: 'Product → UGC', type: 'video', creator: 'Seedance', credit_config: { cost: 8 }, is_coming_soon: true },
   { slug: 'talking-avatar', name: 'Talking Avatar', type: 'video', creator: 'Kling Avatar', credit_config: { cost: 5 }, is_coming_soon: true },
 ]
+
+// Slugs of live models to surface in the Trending tab (real, generatable).
+export const TRENDING_LIVE_SLUGS = ['kling-3-mc']

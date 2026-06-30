@@ -439,9 +439,11 @@ function EmptyState({
   // The hero example: first one that carries an input we can actually render.
   const featured = exs.find((e) => e.input_image || playable(e.input_video)) ?? exs[0] ?? null
   const gallery = exs.filter((e) => e.id !== featured?.id).slice(0, 4)
-  // Prefer a playable source video; otherwise fall back to the reference image.
-  const inputUrl = featured && (playable(featured.input_video) ? featured.input_video : featured.input_image)
-  const inputKind: 'image' | 'video' = featured && playable(featured.input_video) ? 'video' : 'image'
+  // Inputs shown beside the result: reference image and/or playable source video.
+  const inputs: { url: string; kind: 'image' | 'video'; label: string }[] = []
+  if (featured?.input_image) inputs.push({ url: featured.input_image, kind: 'image', label: t.ex.inputImage })
+  if (featured?.input_video && playable(featured.input_video))
+    inputs.push({ url: featured.input_video, kind: 'video', label: t.ex.inputVideo })
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -475,17 +477,17 @@ function EmptyState({
       {/* Featured input → output preview from real user data */}
       {featured ? (
         <div className="mt-9">
-          <div className="flex items-center justify-center gap-3 sm:gap-4">
-            {inputUrl && (
-              <>
-                <div className="flex flex-col items-center gap-2">
-                  <div className="relative w-40 sm:w-52 aspect-square rounded-2xl overflow-hidden border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-950">
-                    <MediaTile url={inputUrl} kind={inputKind} />
-                  </div>
-                  <span className="text-[11px] font-medium text-neutral-400">{t.ex.input}</span>
+          <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
+            {inputs.map((inp) => (
+              <div key={inp.label} className="flex flex-col items-center gap-2">
+                <div className="relative w-32 sm:w-40 aspect-square rounded-2xl overflow-hidden border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-950">
+                  <MediaTile url={inp.url} kind={inp.kind} />
                 </div>
-                <IconSparkle className="w-5 h-5 text-neutral-300 dark:text-neutral-600 shrink-0" />
-              </>
+                <span className="text-[11px] font-medium text-neutral-400">{inp.label}</span>
+              </div>
+            ))}
+            {inputs.length > 0 && (
+              <IconSparkle className="w-5 h-5 text-neutral-300 dark:text-neutral-600 shrink-0" />
             )}
             <div className="flex flex-col items-center gap-2">
               <div className="relative w-40 sm:w-52 aspect-square rounded-2xl overflow-hidden border-2 border-neutral-900/10 dark:border-white/10 bg-neutral-100 dark:bg-neutral-950 shadow-lg">

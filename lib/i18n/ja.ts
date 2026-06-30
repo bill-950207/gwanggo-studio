@@ -52,6 +52,8 @@ export const ja: Dict = {
     howItWorks: '使い方',
     realResults: 'このモデルの実際の生成結果',
     input: '入力',
+    inputImage: '入力画像',
+    inputVideo: '入力動画',
     output: '結果',
     start: '作成をはじめる —',
     startSub: 'シーン、キャラクター、雰囲気、スタイルを説明すると結果が生成されます。',

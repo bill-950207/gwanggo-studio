@@ -52,6 +52,8 @@ export const zh: Dict = {
     howItWorks: '使用方法',
     realResults: '该模型的真实生成结果',
     input: '输入',
+    inputImage: '输入图片',
+    inputVideo: '输入视频',
     output: '结果',
     start: '开始创作 —',
     startSub: '描述场景、人物、氛围或风格，即可看到生成结果。',

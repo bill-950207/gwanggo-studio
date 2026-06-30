@@ -50,6 +50,8 @@ export const en = {
     howItWorks: 'How it works',
     realResults: 'Real results from this model',
     input: 'Input',
+    inputImage: 'Input image',
+    inputVideo: 'Input video',
     output: 'Result',
     start: 'Start creating with',
     startSub: 'Describe a scene, character, mood, or style — and watch it come to life.',

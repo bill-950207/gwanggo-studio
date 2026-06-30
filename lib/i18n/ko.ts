@@ -52,6 +52,8 @@ export const ko: Dict = {
     howItWorks: '사용 방법',
     realResults: '이 모델의 실제 생성 결과',
     input: '입력',
+    inputImage: '입력 이미지',
+    inputVideo: '입력 영상',
     output: '결과',
     start: '시작하기 —',
     startSub: '장면, 인물, 분위기, 스타일을 설명하면 결과물이 만들어집니다.',

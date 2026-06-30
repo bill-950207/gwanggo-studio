@@ -44,7 +44,7 @@ export function Sidebar({ tab, onTab }: { tab: Tab; onTab: (t: Tab) => void }) {
           <IconMoon className="w-[18px] h-[18px]" />
           {theme === 'dark' ? t.nav.themeLight : t.nav.themeDark}
         </button>
-        <a href="https://github.com" target="_blank" rel="noreferrer" className="nav-item">
+        <a href="https://github.com/bill-950207/gwanggo-studio" target="_blank" rel="noreferrer" className="nav-item">
           <IconGithub className="w-[18px] h-[18px]" />
           {t.nav.github}
         </a>

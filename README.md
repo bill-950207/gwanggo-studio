@@ -20,7 +20,7 @@ app. No model lock-in like closed tools. One key, every model.
 ## Quick start
 
 ```bash
-git clone https://github.com/your-org/gwanggo-studio
+git clone https://github.com/bill-950207/gwanggo-studio
 cd gwanggo-studio
 npm install
 cp .env.example .env.local      # points at the hosted Gwanggo API by default

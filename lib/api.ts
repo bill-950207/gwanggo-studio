@@ -1,7 +1,7 @@
 import { getKey } from './auth'
 import type { Model, Me, Task, GenerateResult, Example } from './types'
 
-const BASE = process.env.NEXT_PUBLIC_API_URL || ''
+const BASE = process.env.NEXT_PUBLIC_API_URL || 'https://gwanggo.jocoding.io'
 
 /** Resolve a media URL from the API. Relative paths (proxy URLs) get the API base prepended. */
 export function mediaUrl(u: string | null | undefined): string {

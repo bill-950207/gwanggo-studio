@@ -26,6 +26,9 @@ export default function Studio() {
   }
   const currentList = lists[tab]
 
+  // Preferred landing model per tab (falls back to first available slug)
+  const defaultSlug = tab === 'image' ? 'gpt-image-2' : tab === 'video' ? 'seedance-2.0' : null
+
   // Keep the selected model in sync with the current tab's list. Critically, when
   // the live catalog replaces the fallback, re-bind to the LIVE object (same slug)
   // so logo_url / thumbnail_url are present instead of the bare fallback entry.
@@ -35,9 +38,13 @@ export default function Studio() {
     if (live) {
       if (live !== model) setModel(live)
     } else {
-      setModel(currentList.find((m) => !m.is_coming_soon) ?? currentList[0])
+      setModel(
+        (defaultSlug ? currentList.find((m) => m.slug === defaultSlug && !m.is_coming_soon) : undefined) ??
+          currentList.find((m) => !m.is_coming_soon) ??
+          currentList[0]
+      )
     }
-  }, [currentList, model])
+  }, [currentList, model, defaultSlug])
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#FAFAFA] dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100">

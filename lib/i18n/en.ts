@@ -12,7 +12,7 @@ export const en = {
   top: {
     models: 'Models',
     docs: 'Docs',
-    discord: 'Discord',
+    community: 'GitHub',
     credits: 'credits',
     connect: 'Connect',
   },

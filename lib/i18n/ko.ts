@@ -14,7 +14,7 @@ export const ko: Dict = {
   top: {
     models: '모델',
     docs: '문서',
-    discord: 'Discord',
+    community: 'GitHub',
     credits: '크레딧',
     connect: '연결',
   },

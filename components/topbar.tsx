@@ -31,11 +31,11 @@ export function TopBar({
       </div>
 
       <div className="flex items-center gap-1.5">
-        <a href="#" className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800/60 transition">
+        <a href="https://github.com/bill-950207/gwanggo-studio#readme" target="_blank" rel="noopener noreferrer" className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800/60 transition">
           {t.top.docs}
         </a>
-        <a href="#" className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800/60 transition">
-          {t.top.discord}
+        <a href="https://github.com/bill-950207/gwanggo-studio/issues" target="_blank" rel="noopener noreferrer" className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800/60 transition">
+          {t.top.community}
         </a>
         <button onClick={onOpenConnect} className="flex items-center gap-2 ml-1 pl-3 pr-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 hover:border-neutral-300 dark:hover:border-neutral-700 transition">
           <IconCoins className="w-4 h-4 text-neutral-500" />

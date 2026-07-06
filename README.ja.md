@@ -2,6 +2,8 @@
 
 <img src="./docs/hero.png" alt="Gwanggo Studio" width="100%" />
 
+<img src="./docs/demo.gif" alt="Prompt to result in one flow" width="100%" />
+
 <br />
 
 # ⚡ Gwanggo Studio
@@ -85,7 +87,7 @@ npm run dev        # → http://localhost:3000
 
 **キーを接続:** アバターをクリック → APIキーを貼り付け。キーは**あなたのデバイスにのみ**保存され、Bearerトークンとしてのみ送信されます。
 
-> 🔑 **キーの取得:** [gwanggo.jocoding.io](https://gwanggo.jocoding.io) にサインイン → **API keys** → **Create**。
+> 🔑 **キーの取得:** [gwanggo.jocoding.io](https://gwanggo.jocoding.io?utm_source=github&utm_medium=readme) にサインイン → **API keys** → **Create**。
 > 新規アカウントには**無料クレジット**付き — 画像・動画ワークフロー全体を試すのに十分です。
 
 <br />

@@ -2,6 +2,8 @@
 
 <img src="./docs/hero.png" alt="Gwanggo Studio" width="100%" />
 
+<img src="./docs/demo.gif" alt="Prompt to result in one flow" width="100%" />
+
 <br />
 
 # ⚡ Gwanggo Studio
@@ -85,7 +87,7 @@ That's it — no `.env` required. The studio points at the hosted Gwanggo API ou
 
 **Then connect your key:** click the avatar → paste your API key. It's stored **only on your device** and sent solely as a Bearer token.
 
-> 🔑 **Get a key:** sign in at [gwanggo.jocoding.io](https://gwanggo.jocoding.io) → **API keys** → **Create**.
+> 🔑 **Get a key:** sign in at [gwanggo.jocoding.io](https://gwanggo.jocoding.io?utm_source=github&utm_medium=readme) → **API keys** → **Create**.
 > New accounts get **free credits** — enough to try the full image & video workflow.
 
 <br />

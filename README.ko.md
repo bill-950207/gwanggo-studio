@@ -2,6 +2,8 @@
 
 <img src="./docs/hero.png" alt="Gwanggo Studio" width="100%" />
 
+<img src="./docs/demo.gif" alt="Prompt to result in one flow" width="100%" />
+
 <br />
 
 # ⚡ Gwanggo Studio
@@ -85,7 +87,7 @@ npm run dev        # → http://localhost:3000
 
 **키 연결:** 아바타 클릭 → API 키 붙여넣기. 키는 **내 기기에만** 저장되며 Bearer 토큰으로만 전송됩니다.
 
-> 🔑 **키 발급:** [gwanggo.jocoding.io](https://gwanggo.jocoding.io) 로그인 → **API keys** → **Create**.
+> 🔑 **키 발급:** [gwanggo.jocoding.io](https://gwanggo.jocoding.io?utm_source=github&utm_medium=readme) 로그인 → **API keys** → **Create**.
 > 신규 가입 시 **무료 크레딧** 지급 — 이미지·영상 워크플로우 전체를 체험하기에 충분합니다.
 
 <br />

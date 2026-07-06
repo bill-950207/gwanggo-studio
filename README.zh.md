@@ -2,6 +2,8 @@
 
 <img src="./docs/hero.png" alt="Gwanggo Studio" width="100%" />
 
+<img src="./docs/demo.gif" alt="Prompt to result in one flow" width="100%" />
+
 <br />
 
 # ⚡ Gwanggo Studio
@@ -85,7 +87,7 @@ npm run dev        # → http://localhost:3000
 
 **连接你的钥匙:** 点击头像 → 粘贴API密钥。密钥**只存储在你的设备上**,仅作为 Bearer 令牌发送。
 
-> 🔑 **获取密钥:** 登录 [gwanggo.jocoding.io](https://gwanggo.jocoding.io) → **API keys** → **Create**。
+> 🔑 **获取密钥:** 登录 [gwanggo.jocoding.io](https://gwanggo.jocoding.io?utm_source=github&utm_medium=readme) → **API keys** → **Create**。
 > 新账号赠送**免费积分** — 足够体验完整的图像·视频工作流。
 
 <br />

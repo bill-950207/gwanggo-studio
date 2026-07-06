@@ -14,7 +14,7 @@ export const zh: Dict = {
   top: {
     models: '模型',
     docs: '文档',
-    discord: 'Discord',
+    community: 'GitHub',
     credits: '积分',
     connect: '连接',
   },

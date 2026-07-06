@@ -14,7 +14,7 @@ export const ja: Dict = {
   top: {
     models: 'モデル',
     docs: 'ドキュメント',
-    discord: 'Discord',
+    community: 'GitHub',
     credits: 'クレジット',
     connect: '接続',
   },

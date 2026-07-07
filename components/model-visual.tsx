@@ -3,6 +3,7 @@
 /* eslint-disable @next/next/no-img-element */
 import { useState } from 'react'
 import { gradientFor } from '@/lib/catalog'
+import { thumbUrl } from '@/lib/api'
 import type { Model } from '@/lib/types'
 
 function initialsOf(creator: string): string {
@@ -46,7 +47,13 @@ export function ModelThumb({ model, className = '' }: { model: Model; className?
   return (
     <div className={`relative overflow-hidden grain bg-gradient-to-br ${gradientFor(model.name)} ${className}`}>
       {model.thumbnail_url && (
-        <img src={model.thumbnail_url} alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <img
+          src={thumbUrl(model.thumbnail_url, 480)}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          className="absolute inset-0 w-full h-full object-cover"
+        />
       )}
       <div className="absolute top-2 left-2 rounded-md bg-white/90 p-0.5 shadow-sm ring-1 ring-black/5">
         <ModelLogo model={model} size={22} />

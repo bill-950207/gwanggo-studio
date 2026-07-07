@@ -9,6 +9,19 @@ export function mediaUrl(u: string | null | undefined): string {
   return u.startsWith('/') ? BASE + u : u
 }
 
+/**
+ * Resized-image URL via the API's media proxy (`?w=` → server-side webp thumbnail).
+ * Full-resolution generation outputs are several MB each — never render them raw
+ * in card grids. Non-image URLs pass through untouched on the server side.
+ */
+export function thumbUrl(u: string | null | undefined, width: number): string {
+  if (!u) return ''
+  if (u.startsWith('/')) {
+    return `${BASE}${u}${u.includes('?') ? '&' : '?'}w=${width}`
+  }
+  return `${BASE}/api/v1/examples/media?url=${encodeURIComponent(u)}&w=${width}`
+}
+
 export class ApiError extends Error {
   status: number
   code?: string

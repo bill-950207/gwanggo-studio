@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { useI18n } from '@/lib/i18n'
 import { useStudio } from '@/lib/studio'
-import { api, ApiError, uploadFile, mediaUrl } from '@/lib/api'
+import { api, ApiError, uploadFile, mediaUrl, thumbUrl } from '@/lib/api'
 import { gradientFor, creditCost } from '@/lib/catalog'
 import type { Model, Task, Example } from '@/lib/types'
 import { IconSparkle, IconChevronDown, IconImage, IconVideo } from './icons'
@@ -412,12 +412,11 @@ function FieldSelect({
 }
 
 function MediaTile({ url, kind, className = '' }: { url: string; kind: 'image' | 'video'; className?: string }) {
-  const src = mediaUrl(url)
   return kind === 'video' ? (
-    <video src={src} className={`w-full h-full object-cover ${className}`} muted loop playsInline autoPlay preload="metadata" />
+    <video src={mediaUrl(url)} className={`w-full h-full object-cover ${className}`} muted loop playsInline autoPlay preload="metadata" />
   ) : (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={src} alt="" className={`w-full h-full object-cover ${className}`} />
+    <img src={thumbUrl(url, 1024)} alt="" loading="lazy" decoding="async" className={`w-full h-full object-cover ${className}`} />
   )
 }
 

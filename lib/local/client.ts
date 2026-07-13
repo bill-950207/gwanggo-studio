@@ -14,7 +14,7 @@ import type {
   LocalProgress,
   LocalState,
 } from './types'
-import { BF16_VRAM_GB, LOCAL_RUNTIME_URL, MIN_VRAM_GB, ZIMAGE_FILES } from './types'
+import { APPLE_MIN_UNIFIED_GB, BF16_VRAM_GB, LOCAL_RUNTIME_URL, MIN_VRAM_GB, ZIMAGE_FILES } from './types'
 import { probeHardwareHint } from './hardware'
 
 type JsonObject = Record<string, unknown>
@@ -22,6 +22,8 @@ type JsonObject = Record<string, unknown>
 interface ModelFiles {
   unet: string
   textEncoder: string
+  /** mps는 GGUF 전용 로더 사용 */
+  unetLoaderClass: 'UNETLoader' | 'UnetLoaderGGUF'
 }
 
 interface DeviceInfo {
@@ -75,25 +77,35 @@ function findModelFile(options: string[], filename: string): string | null {
 }
 
 function chooseModelFiles(
-  unetOptions: string[],
-  textEncoderOptions: string[],
-  preferBf16: boolean,
-  // MPS는 int8 matmul 미지원 — Apple에서는 int8 유닛을 선택 후보에서 제외
-  allowInt8 = true
+  options: { unet: string[]; unetGguf: string[]; textEncoder: string[] },
+  backend: string | null,
+  vramGB: number | null
 ): ModelFiles | null {
-  const unetBf16 = findModelFile(unetOptions, ZIMAGE_FILES.unetBf16)
-  const unetInt8 = allowInt8 ? findModelFile(unetOptions, ZIMAGE_FILES.unetInt8) : null
+  const textEncoderBf16 = findModelFile(options.textEncoder, ZIMAGE_FILES.textEncoderBf16)
+  const textEncoderFp8 = findModelFile(options.textEncoder, ZIMAGE_FILES.textEncoderFp8)
+
+  // Apple(MPS): int8 커널 부재 + bf16 메모리 압박 → GGUF 전용 (실측 15.3s/step)
+  if (backend === 'mps') {
+    const unetGguf = findModelFile(options.unetGguf, ZIMAGE_FILES.unetGguf)
+    // TE는 CPU에서 실행되므로 bf16 우선 (fp8은 CPU 캐스팅 미검증)
+    const textEncoder = textEncoderBf16 ?? textEncoderFp8
+    return unetGguf && textEncoder
+      ? { unet: unetGguf, textEncoder, unetLoaderClass: 'UnetLoaderGGUF' }
+      : null
+  }
+
+  const preferBf16 = vramGB !== null && vramGB >= BF16_VRAM_GB
+  const unetBf16 = findModelFile(options.unet, ZIMAGE_FILES.unetBf16)
+  const unetInt8 = findModelFile(options.unet, ZIMAGE_FILES.unetInt8)
   const unet = preferBf16 ? unetBf16 ?? unetInt8 : unetInt8 ?? unetBf16
   if (!unet) return null
 
-  const textEncoderBf16 = findModelFile(textEncoderOptions, ZIMAGE_FILES.textEncoderBf16)
-  const textEncoderFp8 = findModelFile(textEncoderOptions, ZIMAGE_FILES.textEncoderFp8)
   const textEncoder =
     unet === unetInt8
       ? textEncoderFp8 ?? textEncoderBf16
       : textEncoderBf16 ?? textEncoderFp8
 
-  return textEncoder ? { unet, textEncoder } : null
+  return textEncoder ? { unet, textEncoder, unetLoaderClass: 'UNETLoader' } : null
 }
 
 function getDevices(data: unknown): DeviceInfo[] {
@@ -136,14 +148,18 @@ function getComfyVersion(data: unknown): string | null {
 
 async function getModelOptions(baseUrl: string): Promise<{
   unet: string[]
+  unetGguf: string[]
   textEncoder: string[]
 }> {
-  const [unetInfo, clipInfo] = await Promise.all([
+  const [unetInfo, clipInfo, ggufInfo] = await Promise.all([
     fetchJson(baseUrl, '/object_info/UNETLoader'),
     fetchJson(baseUrl, '/object_info/CLIPLoader'),
+    // ComfyUI-GGUF 커스텀 노드가 없으면 404 — 빈 목록으로 처리
+    fetchJson(baseUrl, '/object_info/UnetLoaderGGUF').catch(() => null),
   ])
   return {
     unet: getLoaderOptions(unetInfo, 'UNETLoader', 'unet_name'),
+    unetGguf: getLoaderOptions(ggufInfo, 'UnetLoaderGGUF', 'unet_name'),
     textEncoder: getLoaderOptions(clipInfo, 'CLIPLoader', 'clip_name'),
   }
 }
@@ -249,8 +265,8 @@ export async function detectLocalRuntime(): Promise<LocalState> {
   const insufficient =
     backend === 'cpu' ||
     (backend === 'cuda' && vramGB !== null && vramGB < MIN_VRAM_GB) ||
-    // Apple Silicon(MPS)은 v1 미지원 — int8 커널 부재 + bf16 비실용 속도(실측 ~27분/장)
-    backend === 'mps'
+    // Apple은 GGUF 티어 상주 ~14GB — 24GB 미만 통합메모리는 스왑으로 비실용
+    (backend === 'mps' && vramGB !== null && vramGB < APPLE_MIN_UNIFIED_GB)
 
   if (insufficient) {
     return { status: 'insufficient', hint: 'likely', system, unetFile: null }
@@ -263,12 +279,7 @@ export async function detectLocalRuntime(): Promise<LocalState> {
     return { status: 'model_missing', hint: 'likely', system, unetFile: null }
   }
 
-  const files = chooseModelFiles(
-    options.unet,
-    options.textEncoder,
-    backend === 'mps' || (vramGB !== null && vramGB >= BF16_VRAM_GB),
-    backend !== 'mps'
-  )
+  const files = chooseModelFiles(options, backend, vramGB)
   if (!files) return { status: 'model_missing', hint: 'likely', system, unetFile: null }
 
   return { status: 'ready', hint: 'likely', system, unetFile: files.unet }
@@ -289,20 +300,14 @@ export async function generateLocalImage(
   const device = selectDevice(stats)
   const backend = normalizeBackend(device)
   const vramGB = getVramGB(device)
-  const files = chooseModelFiles(
-    options.unet,
-    options.textEncoder,
-    backend === 'mps' || (vramGB !== null && vramGB >= BF16_VRAM_GB),
-    backend !== 'mps'
-  )
+  const files = chooseModelFiles(options, backend, vramGB)
   if (!files) throw new Error('Required Z-Image Turbo model files are missing in ComfyUI')
 
   const seed = params.seed ?? randomUint32()
   const graph = {
-    '1': {
-      class_type: 'UNETLoader',
-      inputs: { unet_name: files.unet, weight_dtype: 'default' },
-    },
+    '1': files.unetLoaderClass === 'UnetLoaderGGUF'
+      ? { class_type: 'UnetLoaderGGUF', inputs: { unet_name: files.unet } }
+      : { class_type: 'UNETLoader', inputs: { unet_name: files.unet, weight_dtype: 'default' } },
     '2': {
       class_type: 'CLIPLoader',
       inputs: { clip_name: files.textEncoder, type: 'lumina2', device: 'default' },

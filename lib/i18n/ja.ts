@@ -59,7 +59,7 @@ export const ja: Dict = {
     modelMissingTitle: 'ローカル設定を完了しましょう',
     modelMissingDesc: 'ComfyUIは起動していますが、Z-Image Turboのファイルがありません。インストーラーで追加してください。',
     insufficientTitle: 'GPUメモリが不足しています',
-    insufficientDesc: 'ローカル生成には8GB以上のVRAMを持つNVIDIA GPUが必要です。Apple Siliconはまだ実用的な速度が出ないため、クラウド生成をおすすめします。',
+    insufficientDesc: 'ローカル生成には8GB以上のVRAMを持つNVIDIA GPU、または24GB以上メモリのApple Silicon Macが必要です。',
     unlikelyTitle: 'ローカル対応が難しいデバイスです',
     unlikelyDesc: '対応GPUをブラウザで確認できませんでした。クラウド生成なら、どのデバイスでもすぐ使えます。',
     installLabel: 'ターミナルで実行',

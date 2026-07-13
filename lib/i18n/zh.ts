@@ -59,7 +59,7 @@ export const zh: Dict = {
     modelMissingTitle: '完成本地设置',
     modelMissingDesc: 'ComfyUI已启动，但缺少Z-Image Turbo文件。运行安装命令即可补全。',
     insufficientTitle: 'GPU显存不足',
-    insufficientDesc: '本地生成需要8GB以上显存的NVIDIA GPU。Apple芯片目前速度尚不实用，建议使用云端生成。',
+    insufficientDesc: '本地生成需要8GB以上显存的NVIDIA GPU，或24GB以上内存的Apple芯片Mac。',
     unlikelyTitle: '此设备的本地支持有限',
     unlikelyDesc: '浏览器未检测到受支持的GPU。云端生成不受设备限制，打开即可使用。',
     installLabel: '在终端中运行',

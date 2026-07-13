@@ -100,7 +100,7 @@ npm run dev        # → http://localhost:3000
 curl -fsSL https://raw.githubusercontent.com/bill-950207/gwanggo-studio/main/scripts/local/install.sh | bash
 ```
 
-**必要なスペック:** NVIDIA GPU 8GB+ (Linux/Windows)。Apple Siliconは現状非実用 — クラウド推奨。[インストールガイド](./docs/local-generation.md)
+**必要なスペック:** NVIDIA GPU 8GB+ (Linux/Windows) または Apple Silicon 24GB+ (macOS、1枚あたり約2分)。[インストールガイド](./docs/local-generation.md)
 
 **Windows?** [install.ps1](./scripts/local/install.ps1) をダウンロードして実行
 

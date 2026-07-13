@@ -59,7 +59,7 @@ export const ko: Dict = {
     modelMissingTitle: '로컬 설정을 마무리하세요',
     modelMissingDesc: 'ComfyUI는 실행 중이지만 Z-Image Turbo 파일이 없습니다. 설치 명령으로 추가하세요.',
     insufficientTitle: 'GPU 메모리가 더 필요합니다',
-    insufficientDesc: '로컬 생성에는 VRAM 8GB 이상 NVIDIA GPU가 필요합니다. Apple Silicon은 아직 실용 속도가 나오지 않아 클라우드 생성을 권장합니다.',
+    insufficientDesc: '로컬 생성에는 VRAM 8GB 이상 NVIDIA GPU 또는 메모리 24GB 이상 Apple Silicon 맥이 필요합니다.',
     unlikelyTitle: '로컬 지원이 제한된 기기입니다',
     unlikelyDesc: '브라우저에서 지원 GPU를 찾지 못했습니다. 클라우드 생성은 어떤 기기에서든 바로 쓸 수 있습니다.',
     installLabel: '터미널에서 실행',

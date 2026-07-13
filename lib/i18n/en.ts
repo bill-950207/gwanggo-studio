@@ -57,7 +57,7 @@ export const en = {
     modelMissingTitle: 'Finish your local setup',
     modelMissingDesc: 'ComfyUI is running, but the Z-Image Turbo files are missing. Run the installer to add them.',
     insufficientTitle: 'This device needs more GPU memory',
-    insufficientDesc: 'Local generation needs an NVIDIA GPU with 8 GB+ VRAM. Apple Silicon is not practical yet — we recommend cloud generation on Mac.',
+    insufficientDesc: 'Local generation needs an NVIDIA GPU with 8 GB+ VRAM, or an Apple Silicon Mac with 24 GB+ memory.',
     unlikelyTitle: 'Local support looks limited',
     unlikelyDesc: 'This browser could not find a supported GPU. Cloud generation works on any device.',
     installLabel: 'Run in Terminal',

@@ -60,11 +60,18 @@ detect_hardware() {
       
       log_info "Detected: macOS arm64 with ${mem_gb}GB unified memory"
       
-      # Apple Silicon은 v1 미지원: MPS에 int8 matmul 커널이 없고,
-      # bf16은 실측 ~27분/장(M4 Pro 24GB)으로 비실용 → 클라우드 안내
-      spec_fail \
-        "Apple Silicon (${mem_gb}GB) detected - local generation is not practical on macOS yet (MPS lacks int8 kernels; bf16 measured ~27 min/image). / Apple Silicon은 아직 로컬 생성이 비실용적입니다." \
-        "Cloud generation works great on Mac - no download needed."
+      # Apple Silicon = GGUF 티어 (실측 M4 Pro: 15.3s/step, ~2.5분/장 @1024px)
+      # int8은 MPS 커널 부재로 불가, bf16은 19GB 스왑으로 비실용 → GGUF가 유일 실용 경로
+      # 상주 메모리 ~14GB(unet 5.5 MPS + TE 7.5 CPU)라 24GB 미만은 스왑 위험
+      if [ "$mem_gb" -lt 24 ]; then
+        spec_fail \
+          "Apple Silicon with ${mem_gb}GB unified memory detected - requires 24GB+ (local runtime uses ~14GB while generating)." \
+          "Cloud generation works great on any Mac - no download needed."
+      fi
+
+      log_warn "Apple Silicon detected: GGUF tier (~13GB download; measured ~2-2.5 min/image on M4 Pro)"
+      TIER="gguf"
+      return 0
     else
       spec_fail \
         "macOS with $arch architecture detected." \
@@ -123,7 +130,9 @@ check_prereqs() {
   mkdir -p "$INSTALL_DIR"
   local available_kb=$(df -Pk "$INSTALL_DIR" 2>/dev/null | tail -1 | awk '{print $4}')
   local available_gb=$(( ${available_kb:-0} / 1024 / 1024 ))
-  local required_gb=$([[ "$TIER" == "bf16" ]] && echo 25 || echo 15)
+  local required_gb=15
+  [[ "$TIER" == "bf16" ]] && required_gb=25
+  [[ "$TIER" == "gguf" ]] && required_gb=18
 
   if [ "$available_gb" -lt "$required_gb" ]; then
     log_warn "Available disk space: ${available_gb}GB, required: ${required_gb}GB"
@@ -164,6 +173,17 @@ setup_comfyui() {
   
   log_info "Installing ComfyUI dependencies..."
   pip install -r "$INSTALL_DIR/ComfyUI/requirements.txt" -q
+
+  # GGUF 티어(Apple)는 ComfyUI-GGUF 커스텀 노드 필요
+  if [ "${TIER:-}" == "gguf" ]; then
+    log_info "Installing ComfyUI-GGUF node (required on Apple Silicon)..."
+    if [ ! -d "$INSTALL_DIR/ComfyUI/custom_nodes/ComfyUI-GGUF" ]; then
+      git clone https://github.com/city96/ComfyUI-GGUF.git "$INSTALL_DIR/ComfyUI/custom_nodes/ComfyUI-GGUF"
+    else
+      git -C "$INSTALL_DIR/ComfyUI/custom_nodes/ComfyUI-GGUF" pull --ff-only 2>/dev/null || true
+    fi
+    pip install -q gguf sentencepiece
+  fi
 }
 
 # Download models
@@ -174,23 +194,33 @@ download_models() {
   mkdir -p "$INSTALL_DIR/ComfyUI/models/text_encoders"
   mkdir -p "$INSTALL_DIR/ComfyUI/models/vae"
   
-  # Determine exact filenames based on tier
+  local GGUF_BASE="https://huggingface.co/jayn7/Z-Image-Turbo-GGUF/resolve/main"
+
+  # "저장경로|다운로드URL" 쌍 — 티어별 구성
   local files_to_download
   if [ "$TIER" == "bf16" ]; then
     files_to_download=(
-      "diffusion_models/z_image_turbo_bf16.safetensors"
-      "text_encoders/qwen_3_4b.safetensors"
-      "vae/ae.safetensors"
+      "diffusion_models/z_image_turbo_bf16.safetensors|$MODELS_BASE/diffusion_models/z_image_turbo_bf16.safetensors"
+      "text_encoders/qwen_3_4b.safetensors|$MODELS_BASE/text_encoders/qwen_3_4b.safetensors"
+      "vae/ae.safetensors|$MODELS_BASE/vae/ae.safetensors"
+    )
+  elif [ "$TIER" == "gguf" ]; then
+    files_to_download=(
+      "diffusion_models/z_image_turbo-Q6_K.gguf|$GGUF_BASE/z_image_turbo-Q6_K.gguf"
+      "text_encoders/qwen_3_4b.safetensors|$MODELS_BASE/text_encoders/qwen_3_4b.safetensors"
+      "vae/ae.safetensors|$MODELS_BASE/vae/ae.safetensors"
     )
   else
     files_to_download=(
-      "diffusion_models/z_image_turbo_int8_convrot.safetensors"
-      "text_encoders/qwen_3_4b_fp8_mixed.safetensors"
-      "vae/ae.safetensors"
+      "diffusion_models/z_image_turbo_int8_convrot.safetensors|$MODELS_BASE/diffusion_models/z_image_turbo_int8_convrot.safetensors"
+      "text_encoders/qwen_3_4b_fp8_mixed.safetensors|$MODELS_BASE/text_encoders/qwen_3_4b_fp8_mixed.safetensors"
+      "vae/ae.safetensors|$MODELS_BASE/vae/ae.safetensors"
     )
   fi
-  
-  for file in "${files_to_download[@]}"; do
+
+  for entry in "${files_to_download[@]}"; do
+    local file="${entry%%|*}"
+    local url="${entry##*|}"
     local dir="${file%/*}"
     local filename="${file##*/}"
     local target="$INSTALL_DIR/ComfyUI/models/$file"
@@ -202,7 +232,7 @@ download_models() {
     fi
     
     log_info "Downloading $filename..."
-    curl -L -C - --progress-bar -o "$target" "$MODELS_BASE/$file" || log_error "Failed to download $filename"
+    curl -L -C - --progress-bar -o "$target" "$url" || log_error "Failed to download $filename"
   done
 }
 

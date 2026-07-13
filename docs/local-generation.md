@@ -19,7 +19,7 @@ Local generation is supported on consumer-grade GPUs with sufficient VRAM:
 |----------|--------------|-----------|-------|-------|
 | **NVIDIA** | 8GB+ | int8 | ~1-2 min/image | Quantized, optimal for 8-13GB VRAM |
 | NVIDIA | 14GB+ | bf16 | ~30-45 sec/image | Full precision, better quality |
-| **Apple Silicon** (Mac) | — | not supported yet | — | MPS lacks int8 matmul kernels; bf16 measured ~27 min/image on M4 Pro 24GB — use cloud generation for now |
+| **Apple Silicon** (Mac) | 24GB+ unified | GGUF Q6_K | ~2–2.5 min/image (measured, M4 Pro) | Uses ComfyUI-GGUF (installed automatically). int8 is unsupported on MPS and bf16 swaps — GGUF is the practical path |
 | Intel Arc/UHD | ❌ | - | - | Not currently supported |
 
 ### Cloud Alternative
@@ -179,7 +179,7 @@ Then download models manually from [huggingface.co/Comfy-Org/z_image_turbo](http
 
 ## Limitations
 
-- Requires dedicated NVIDIA GPU or a dedicated NVIDIA GPU (Apple Silicon is not yet practical)
+- Requires dedicated NVIDIA GPU or a dedicated NVIDIA GPU or Apple Silicon Mac (24GB+ unified memory)
 - Slower than cloud models for quick batch generation
 - May require 30-45 min for first setup (model downloads)
 - Requires Python 3.10+, git, and ~20GB free disk space

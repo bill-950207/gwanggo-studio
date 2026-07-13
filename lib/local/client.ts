@@ -77,10 +77,12 @@ function findModelFile(options: string[], filename: string): string | null {
 function chooseModelFiles(
   unetOptions: string[],
   textEncoderOptions: string[],
-  preferBf16: boolean
+  preferBf16: boolean,
+  // MPS는 int8 matmul 미지원 — Apple에서는 int8 유닛을 선택 후보에서 제외
+  allowInt8 = true
 ): ModelFiles | null {
   const unetBf16 = findModelFile(unetOptions, ZIMAGE_FILES.unetBf16)
-  const unetInt8 = findModelFile(unetOptions, ZIMAGE_FILES.unetInt8)
+  const unetInt8 = allowInt8 ? findModelFile(unetOptions, ZIMAGE_FILES.unetInt8) : null
   const unet = preferBf16 ? unetBf16 ?? unetInt8 : unetInt8 ?? unetBf16
   if (!unet) return null
 
@@ -247,7 +249,8 @@ export async function detectLocalRuntime(): Promise<LocalState> {
   const insufficient =
     backend === 'cpu' ||
     (backend === 'cuda' && vramGB !== null && vramGB < MIN_VRAM_GB) ||
-    (backend === 'mps' && vramGB !== null && vramGB < 16)
+    // Apple Silicon(MPS)은 v1 미지원 — int8 커널 부재 + bf16 비실용 속도(실측 ~27분/장)
+    backend === 'mps'
 
   if (insufficient) {
     return { status: 'insufficient', hint: 'likely', system, unetFile: null }
@@ -263,7 +266,8 @@ export async function detectLocalRuntime(): Promise<LocalState> {
   const files = chooseModelFiles(
     options.unet,
     options.textEncoder,
-    vramGB !== null && vramGB >= BF16_VRAM_GB
+    backend === 'mps' || (vramGB !== null && vramGB >= BF16_VRAM_GB),
+    backend !== 'mps'
   )
   if (!files) return { status: 'model_missing', hint: 'likely', system, unetFile: null }
 
@@ -282,11 +286,14 @@ export async function generateLocalImage(
     getModelOptions(baseUrl),
     fetchJson(baseUrl, '/system_stats').catch(() => null),
   ])
-  const vramGB = getVramGB(selectDevice(stats))
+  const device = selectDevice(stats)
+  const backend = normalizeBackend(device)
+  const vramGB = getVramGB(device)
   const files = chooseModelFiles(
     options.unet,
     options.textEncoder,
-    vramGB !== null && vramGB >= BF16_VRAM_GB
+    backend === 'mps' || (vramGB !== null && vramGB >= BF16_VRAM_GB),
+    backend !== 'mps'
   )
   if (!files) throw new Error('Required Z-Image Turbo model files are missing in ComfyUI')
 

@@ -119,6 +119,8 @@ export function LocalFunnel({ onUseCloud }: { onUseCloud: () => void }) {
                 {copied ? t.local.copied : t.local.copy}
               </span>
             </button>
+            {/* 다운로드 기대치 관리 — 12GB 앞에서 망설이면 아래 클라우드 버튼이 받는다 */}
+            <p className="mt-2 text-xs text-neutral-400">{t.local.installSizeNote}</p>
           </div>
         )}
 

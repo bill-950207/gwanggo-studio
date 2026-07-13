@@ -60,15 +60,11 @@ detect_hardware() {
       
       log_info "Detected: macOS arm64 with ${mem_gb}GB unified memory"
       
-      if [ "$mem_gb" -lt 16 ]; then
-        spec_fail \
-          "macOS arm64 with ${mem_gb}GB memory detected - requires 16GB+." \
-          "Your device does not meet the minimum requirements."
-      fi
-      
-      log_warn "Apple Silicon detected: int8 model selected (slower than NVIDIA, but works)"
-      TIER="int8"
-      return 0
+      # Apple Silicon은 v1 미지원: MPS에 int8 matmul 커널이 없고,
+      # bf16은 실측 ~27분/장(M4 Pro 24GB)으로 비실용 → 클라우드 안내
+      spec_fail \
+        "Apple Silicon (${mem_gb}GB) detected - local generation is not practical on macOS yet (MPS lacks int8 kernels; bf16 measured ~27 min/image). / Apple Silicon은 아직 로컬 생성이 비실용적입니다." \
+        "Cloud generation works great on Mac - no download needed."
     else
       spec_fail \
         "macOS with $arch architecture detected." \
@@ -123,13 +119,17 @@ check_prereqs() {
   fi
   log_info "Python found"
   
-  # Check disk space
-  local available_gb=$(df -BG "$INSTALL_DIR" 2>/dev/null | tail -1 | awk '{print $(NF-2)}' | sed 's/G//')
+  # Check disk space (df -Pk: macOS/Linux 공통 POSIX 플래그)
+  mkdir -p "$INSTALL_DIR"
+  local available_kb=$(df -Pk "$INSTALL_DIR" 2>/dev/null | tail -1 | awk '{print $4}')
+  local available_gb=$(( ${available_kb:-0} / 1024 / 1024 ))
   local required_gb=$([[ "$TIER" == "bf16" ]] && echo 25 || echo 15)
-  
-  if [ -z "$available_gb" ] || [ "$available_gb" -lt "$required_gb" ]; then
+
+  if [ "$available_gb" -lt "$required_gb" ]; then
     log_warn "Available disk space: ${available_gb}GB, required: ${required_gb}GB"
     log_warn "Continuing anyway - download may fail if insufficient space"
+  else
+    log_info "Disk space OK: ${available_gb}GB available (${required_gb}GB required)"
   fi
 }
 
@@ -174,14 +174,8 @@ download_models() {
   mkdir -p "$INSTALL_DIR/ComfyUI/models/text_encoders"
   mkdir -p "$INSTALL_DIR/ComfyUI/models/vae"
   
-  # Define model files
-  local files_to_download=(
-    "diffusion_models/${TIER:+z_image_turbo_${TIER}.safetensors}"
-    "text_encoders/${TIER:+qwen_3_4b${TIER:+_fp8_mixed}.safetensors}"
-    "vae/ae.safetensors"
-  )
-  
   # Determine exact filenames based on tier
+  local files_to_download
   if [ "$TIER" == "bf16" ]; then
     files_to_download=(
       "diffusion_models/z_image_turbo_bf16.safetensors"

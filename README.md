@@ -100,7 +100,7 @@ Generate locally, free and private, on supported GPUs — no API key needed.
 curl -fsSL https://raw.githubusercontent.com/bill-950207/gwanggo-studio/main/scripts/local/install.sh | bash
 ```
 
-**Requirements:** NVIDIA GPU 8GB+ (Linux) or Apple Silicon 16GB+ (macOS). [Install guide](./docs/local-generation.md)
+**Requirements:** NVIDIA GPU 8GB+ (Linux/Windows). Apple Silicon: not yet practical — use cloud. [Install guide](./docs/local-generation.md)
 
 **Windows?** Download and run [install.ps1](./scripts/local/install.ps1)
 

@@ -62,10 +62,16 @@ export type LocalProgress =
 export const LOCAL_RUNTIME_URL =
   process.env.NEXT_PUBLIC_LOCAL_RUNTIME_URL || 'http://127.0.0.1:8188'
 
-/** 정식 사양 게이트 (NVIDIA VRAM GB 기준). Apple Silicon은 통합메모리로 별도 판정 */
+/** 정식 사양 게이트 (NVIDIA VRAM GB 기준) */
 export const MIN_VRAM_GB = 8
 /** bf16(고품질) 티어 기준 */
 export const BF16_VRAM_GB = 14
+/*
+ * Apple Silicon(MPS)은 v1에서 미지원 — 클라우드로 안내한다.
+ * 실측 근거(M4 Pro 24GB): int8은 MPS에 matmul 커널(aten::_int_mm)이 없어 실행 불가,
+ * bf16은 웨이트 19GB 메모리 압박으로 ~202초/스텝(8스텝 ≈ 27분/장)이라 비실용.
+ * GGUF(fp16 dequant) 티어가 후속 실험 후보.
+ */
 
 /** ComfyUI models/ 하위 파일명 — 존재 검사와 워크플로 구성에 사용 */
 export const ZIMAGE_FILES = {

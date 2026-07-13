@@ -92,6 +92,22 @@ npm run dev        # → http://localhost:3000
 
 <br />
 
+## 🌐 ローカル生成 (無料)
+
+サポートされるGPUで無料でローカル生成 — APIキーは不要です。
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/bill-950207/gwanggo-studio/main/scripts/local/install.sh | bash
+```
+
+**必要なスペック:** NVIDIA GPU 8GB+ (Linux) または Apple Silicon 16GB+ (macOS)。[インストールガイド](./docs/local-generation.md)
+
+**Windows?** [install.ps1](./scripts/local/install.ps1) をダウンロードして実行
+
+インストーラーがハードウェアをチェックし、条件が満たない場合はクラウド経路(無料35クレジット)に案内します。
+
+<br />
+
 ## 🧠 モデル
 
 厳選され、継続的に更新されるラインナップ — 死んだモデルも、廃止された残骸もありません。

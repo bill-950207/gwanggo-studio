@@ -92,6 +92,22 @@ npm run dev        # → http://localhost:3000
 
 <br />
 
+## 🌐 本地生成(免费)
+
+在支持的GPU上免费本地生成 — 无需API密钥。
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/bill-950207/gwanggo-studio/main/scripts/local/install.sh | bash
+```
+
+**系统要求:** NVIDIA GPU 8GB+(Linux) 或 Apple Silicon 16GB+(macOS)。[安装指南](./docs/local-generation.md)
+
+**Windows?** 下载并运行 [install.ps1](./scripts/local/install.ps1)
+
+安装程序会检查硬件,如果不符合条件会引导你使用云端路径(免费35积分)。
+
+<br />
+
 ## 🧠 模型
 
 精心策划、持续更新的阵容 — 没有僵尸模型,没有废弃残留。

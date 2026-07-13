@@ -92,6 +92,22 @@ That's it — no `.env` required. The studio points at the hosted Gwanggo API ou
 
 <br />
 
+## 🌐 Local generation (free)
+
+Generate locally, free and private, on supported GPUs — no API key needed.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/bill-950207/gwanggo-studio/main/scripts/local/install.sh | bash
+```
+
+**Requirements:** NVIDIA GPU 8GB+ (Linux) or Apple Silicon 16GB+ (macOS). [Install guide](./docs/local-generation.md)
+
+**Windows?** Download and run [install.ps1](./scripts/local/install.ps1)
+
+The installer gates on hardware and guides you to the cloud path (35 free credits) if your device doesn't qualify.
+
+<br />
+
 ## 🧠 Models
 
 A curated, continuously updated lineup — no dead weight, no deprecated leftovers.

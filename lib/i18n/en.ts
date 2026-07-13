@@ -101,6 +101,19 @@ export const en = {
     lowCredits: 'Not enough credits. Top up to continue.',
     topUp: 'Top up',
   },
+  history: {
+    title: 'History',
+    inProgress: 'In progress',
+    local: 'Local',
+    download: 'Download',
+    copyPrompt: 'Copy prompt',
+    copied: 'Copied',
+    delete: 'Delete',
+    estCloudImage: '~10-30s',
+    estCloudVideo: '~1-2 min',
+    estLocal: '~2 min',
+    failed: 'Failed',
+  },
 }
 
 export type Dict = typeof en

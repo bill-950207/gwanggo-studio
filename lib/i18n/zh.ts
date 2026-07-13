@@ -103,4 +103,17 @@ export const zh: Dict = {
     lowCredits: '积分不足，请充值后继续。',
     topUp: '充值',
   },
+  history: {
+    title: '生成历史',
+    inProgress: '生成中',
+    local: '本地',
+    download: '下载',
+    copyPrompt: '复制提示词',
+    copied: '已复制',
+    delete: '删除',
+    estCloudImage: '约10-30秒',
+    estCloudVideo: '约1-2分钟',
+    estLocal: '约2分钟',
+    failed: '失败',
+  },
 }

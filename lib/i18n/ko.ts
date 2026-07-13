@@ -103,4 +103,17 @@ export const ko: Dict = {
     lowCredits: '크레딧이 부족합니다. 충전 후 계속하세요.',
     topUp: '충전하기',
   },
+  history: {
+    title: '생성 기록',
+    inProgress: '생성 중',
+    local: '로컬',
+    download: '다운로드',
+    copyPrompt: '프롬프트 복사',
+    copied: '복사됨',
+    delete: '삭제',
+    estCloudImage: '약 10-30초',
+    estCloudVideo: '약 1-2분',
+    estLocal: '약 2분',
+    failed: '실패',
+  },
 }

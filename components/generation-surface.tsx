@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { useI18n } from '@/lib/i18n'
 import { useStudio } from '@/lib/studio'
 import { api, ApiError, uploadFile, mediaUrl, thumbUrl } from '@/lib/api'
+import { HistoryGrid } from './history-grid'
+import { saveLocalGeneration } from '@/lib/local/history'
 import { gradientFor, creditCost } from '@/lib/catalog'
 import { generateLocalImage } from '@/lib/local/client'
 import { isLocalModel } from '@/lib/local/model'
@@ -96,6 +98,10 @@ export function GenerationSurface({
   const [uploading, setUploading] = useState(false)
   const [uploadingVideo, setUploadingVideo] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+  const [currentCloudTaskId, setCurrentCloudTaskId] = useState<string>('')
+  const [localInProgressPrompt, setLocalInProgressPrompt] = useState<string>('')
+  const [localInProgressAspectRatio, setLocalInProgressAspectRatio] = useState<number | undefined>(undefined)
+  const [refreshToken, setRefreshToken] = useState(0)
   const videoRef = useRef<HTMLInputElement>(null)
   const [exs, setExs] = useState<Example[]>([])
   const localObjectUrls = useRef(new Set<string>())
@@ -212,6 +218,7 @@ export function GenerationSurface({
     try {
       const res = isVideo ? await api.generateVideo(body) : await api.generateImage(body)
       await poll(res.id, index)
+      setCurrentCloudTaskId(res.id)
     } catch (e) {
       handleError(e, index)
     }
@@ -219,6 +226,9 @@ export function GenerationSurface({
 
   async function runLocal(index: number, generationId: number) {
     const size = LOCAL_ASPECT_SIZES[String(values.aspect_ratio)] ?? LOCAL_ASPECT_SIZES['1:1']
+    const promptSnapshot = prompt.trim()
+    setLocalInProgressPrompt(promptSnapshot)
+    setLocalInProgressAspectRatio(size.width / size.height)
     try {
       const result = await generateLocalImage(
         { prompt: prompt.trim(), ...size },
@@ -248,6 +258,14 @@ export function GenerationSurface({
         seed: result.seed,
         aspectRatio: size.width / size.height,
       })
+      // 로컬 생성물을 IndexedDB에 보존 — 새로고침 후에도 히스토리 그리드에 남는다
+      void saveLocalGeneration(
+        { id: globalThis.crypto.randomUUID(), prompt: promptSnapshot, width: size.width, height: size.height, seed: result.seed, createdAt: Date.now() },
+        result.blob
+      )
+      setLocalInProgressPrompt('')
+      setLocalInProgressAspectRatio(undefined)
+      setRefreshToken((prev) => prev + 1)
     } catch (e) {
       if (localGenerationId.current !== generationId) return
       setSlot(index, {
@@ -255,6 +273,8 @@ export function GenerationSurface({
         error: e instanceof Error ? e.message : t.ws.failed,
         aspectRatio: size.width / size.height,
       })
+      setLocalInProgressPrompt('')
+      setLocalInProgressAspectRatio(undefined)
       void refreshLocal()
     }
   }
@@ -280,10 +300,13 @@ export function GenerationSurface({
         if (task.status === 'COMPLETED') {
           clearInterval(iv)
           setSlot(index, { status: 'done', url: task.result_url })
+          setCurrentCloudTaskId('')
+          setRefreshToken((prev) => prev + 1)
           refreshMe()
           resolve()
         } else if (task.status === 'FAILED') {
           clearInterval(iv)
+          setCurrentCloudTaskId('')
           setSlot(index, { status: 'error', error: task.error || t.ws.failed })
           refreshMe()
           resolve()
@@ -308,7 +331,9 @@ export function GenerationSurface({
       setSlot(index, { status: 'error', error: t.connect.lowCredits })
       return
     }
-    setSlot(index, { status: 'error', error: e instanceof ApiError ? e.message : t.ws.failed })
+    const message = e instanceof ApiError ? e.message : t.ws.failed
+    setError(message)
+    setSlot(index, { status: 'error', error: message })
   }
 
   function generate() {
@@ -337,15 +362,21 @@ export function GenerationSurface({
   return (
     <div className="relative flex flex-col h-full">
       <div className="flex-1 overflow-y-auto px-6 pt-8 pb-44">
-        {slots.length === 0 ? (
-          <EmptyState model={model} shape={shape} exs={exs} fallbackThumbs={examples} />
-        ) : (
-          <div className={`mx-auto max-w-4xl grid gap-4 ${slots.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
-            {slots.map((s, i) => (
-              <ResultTile key={i} slot={s} model={model} hint={s.progress ?? t.ws.generating} />
-            ))}
-          </div>
-        )}
+        <HistoryGrid
+          modelType={isVideo ? 'video' : 'image'}
+          currentCloudTask={
+            currentCloudTaskId
+              ? { id: currentCloudTaskId, status: 'IN_PROGRESS', model: model.name, prompt }
+              : undefined
+          }
+          localInProgress={
+            local && slots.some((slot) => slot.status === 'pending')
+              ? { seed: 0, prompt: localInProgressPrompt, aspectRatio: localInProgressAspectRatio }
+              : undefined
+          }
+          refreshToken={refreshToken}
+          empty={<EmptyState model={model} shape={shape} exs={exs} fallbackThumbs={examples} />}
+        />
       </div>
 
       <div className="absolute inset-x-0 bottom-0 px-4 pb-5 pointer-events-none">

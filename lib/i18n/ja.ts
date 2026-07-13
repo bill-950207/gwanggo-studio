@@ -103,4 +103,17 @@ export const ja: Dict = {
     lowCredits: 'クレジットが不足しています。チャージして続行してください。',
     topUp: 'チャージ',
   },
+  history: {
+    title: '生成履歴',
+    inProgress: '生成中',
+    local: 'ローカル',
+    download: 'ダウンロード',
+    copyPrompt: 'プロンプトをコピー',
+    copied: 'コピーしました',
+    delete: '削除',
+    estCloudImage: '約10-30秒',
+    estCloudVideo: '約1-2分',
+    estLocal: '約2分',
+    failed: '失敗',
+  },
 }

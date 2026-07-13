@@ -67,20 +67,21 @@ export const MIN_VRAM_GB = 8
 /** bf16(고품질) 티어 기준 */
 export const BF16_VRAM_GB = 14
 /*
- * Apple Silicon(MPS) 지원 경로 = GGUF 티어 (실측 근거, M4 Pro 24GB):
+ * Apple Silicon(MPS) 지원 경로 = 풀 GGUF 티어 (실측, M4 Pro):
  * - int8: MPS에 matmul 커널(aten::_int_mm)이 없어 실행 불가
  * - bf16: 웨이트 19GB 메모리 압박으로 ~202초/스텝(≈27분/장) — 비실용
- * - GGUF Q6(fp16 dequant): 15.3초/스텝 — 1024px 136초/장, 768px 86초/장 ✓
- * 상주 메모리 ~14GB(unet 5.5 MPS + TE 7.5 CPU)라 24GB 미만은 스왑 위험 → 클라우드 안내.
+ * - GGUF(unet Q6 + TE Q8, fp16 dequant): 1024px 136초/장, 768px 86초/장 ✓
+ * 상주 ~10GB(unet 5.5 + TE 4.0)로 16GB 통합메모리부터 지원.
  */
-export const APPLE_MIN_UNIFIED_GB = 24
+export const APPLE_MIN_UNIFIED_GB = 16
 
 /** ComfyUI models/ 하위 파일명 — 존재 검사와 워크플로 구성에 사용 */
 export const ZIMAGE_FILES = {
   unetBf16: 'z_image_turbo_bf16.safetensors',
   unetInt8: 'z_image_turbo_int8_convrot.safetensors',
-  /** Apple Silicon용 — ComfyUI-GGUF 커스텀 노드(UnetLoaderGGUF)로 로드 */
+  /** Apple Silicon용 — ComfyUI-GGUF 커스텀 노드(UnetLoaderGGUF/CLIPLoaderGGUF)로 로드 */
   unetGguf: 'z_image_turbo-Q6_K.gguf',
+  textEncoderGguf: 'Qwen_3_4b-Q8_0.gguf',
   textEncoderBf16: 'qwen_3_4b.safetensors',
   textEncoderFp8: 'qwen_3_4b_fp8_mixed.safetensors',
   vae: 'ae.safetensors',

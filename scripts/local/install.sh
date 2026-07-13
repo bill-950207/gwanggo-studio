@@ -60,16 +60,18 @@ detect_hardware() {
       
       log_info "Detected: macOS arm64 with ${mem_gb}GB unified memory"
       
-      # Apple Silicon = GGUF 티어 (실측 M4 Pro: 15.3s/step, ~2.5분/장 @1024px)
+      # Apple Silicon = 풀 GGUF 티어 (실측 M4 Pro: ~2.5분/장 @1024px, 상주 ~10GB)
       # int8은 MPS 커널 부재로 불가, bf16은 19GB 스왑으로 비실용 → GGUF가 유일 실용 경로
-      # 상주 메모리 ~14GB(unet 5.5 MPS + TE 7.5 CPU)라 24GB 미만은 스왑 위험
-      if [ "$mem_gb" -lt 24 ]; then
+      if [ "$mem_gb" -lt 16 ]; then
         spec_fail \
-          "Apple Silicon with ${mem_gb}GB unified memory detected - requires 24GB+ (local runtime uses ~14GB while generating)." \
+          "Apple Silicon with ${mem_gb}GB unified memory detected - requires 16GB+ (local runtime uses ~10GB while generating)." \
           "Cloud generation works great on any Mac - no download needed."
       fi
 
-      log_warn "Apple Silicon detected: GGUF tier (~13GB download; measured ~2-2.5 min/image on M4 Pro)"
+      if [ "$mem_gb" -lt 24 ]; then
+        log_warn "16GB Mac: close other heavy apps while generating (runtime uses ~10GB)"
+      fi
+      log_warn "Apple Silicon detected: GGUF tier (~10GB download; measured ~2-2.5 min/image on M4 Pro)"
       TIER="gguf"
       return 0
     else
@@ -132,7 +134,7 @@ check_prereqs() {
   local available_gb=$(( ${available_kb:-0} / 1024 / 1024 ))
   local required_gb=15
   [[ "$TIER" == "bf16" ]] && required_gb=25
-  [[ "$TIER" == "gguf" ]] && required_gb=18
+  [[ "$TIER" == "gguf" ]] && required_gb=14
 
   if [ "$available_gb" -lt "$required_gb" ]; then
     log_warn "Available disk space: ${available_gb}GB, required: ${required_gb}GB"
@@ -195,6 +197,7 @@ download_models() {
   mkdir -p "$INSTALL_DIR/ComfyUI/models/vae"
   
   local GGUF_BASE="https://huggingface.co/jayn7/Z-Image-Turbo-GGUF/resolve/main"
+  local TE_GGUF_BASE="https://huggingface.co/worstplayer/Z-Image_Qwen_3_4b_text_encoder_GGUF/resolve/main"
 
   # "저장경로|다운로드URL" 쌍 — 티어별 구성
   local files_to_download
@@ -207,7 +210,7 @@ download_models() {
   elif [ "$TIER" == "gguf" ]; then
     files_to_download=(
       "diffusion_models/z_image_turbo-Q6_K.gguf|$GGUF_BASE/z_image_turbo-Q6_K.gguf"
-      "text_encoders/qwen_3_4b.safetensors|$MODELS_BASE/text_encoders/qwen_3_4b.safetensors"
+      "text_encoders/Qwen_3_4b-Q8_0.gguf|$TE_GGUF_BASE/Qwen_3_4b-Q8_0.gguf"
       "vae/ae.safetensors|$MODELS_BASE/vae/ae.safetensors"
     )
   else

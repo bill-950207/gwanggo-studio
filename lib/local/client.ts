@@ -24,6 +24,7 @@ interface ModelFiles {
   textEncoder: string
   /** mps는 GGUF 전용 로더 사용 */
   unetLoaderClass: 'UNETLoader' | 'UnetLoaderGGUF'
+  clipLoaderClass: 'CLIPLoader' | 'CLIPLoaderGGUF'
 }
 
 interface DeviceInfo {
@@ -77,20 +78,24 @@ function findModelFile(options: string[], filename: string): string | null {
 }
 
 function chooseModelFiles(
-  options: { unet: string[]; unetGguf: string[]; textEncoder: string[] },
+  options: { unet: string[]; unetGguf: string[]; textEncoder: string[]; clipGguf: string[] },
   backend: string | null,
   vramGB: number | null
 ): ModelFiles | null {
   const textEncoderBf16 = findModelFile(options.textEncoder, ZIMAGE_FILES.textEncoderBf16)
   const textEncoderFp8 = findModelFile(options.textEncoder, ZIMAGE_FILES.textEncoderFp8)
 
-  // Apple(MPS): int8 커널 부재 + bf16 메모리 압박 → GGUF 전용 (실측 15.3s/step)
+  // Apple(MPS): int8 커널 부재 + bf16 메모리 압박 → 풀 GGUF (실측 136s/장, 상주 ~10GB)
   if (backend === 'mps') {
     const unetGguf = findModelFile(options.unetGguf, ZIMAGE_FILES.unetGguf)
-    // TE는 CPU에서 실행되므로 bf16 우선 (fp8은 CPU 캐스팅 미검증)
-    const textEncoder = textEncoderBf16 ?? textEncoderFp8
-    return unetGguf && textEncoder
-      ? { unet: unetGguf, textEncoder, unetLoaderClass: 'UnetLoaderGGUF' }
+    if (!unetGguf) return null
+    // TE도 GGUF 우선(4GB, 품질 손실 없음 실측) — 없으면 bf16 safetensors 폴백
+    const textEncoderGguf = findModelFile(options.clipGguf, ZIMAGE_FILES.textEncoderGguf)
+    if (textEncoderGguf) {
+      return { unet: unetGguf, textEncoder: textEncoderGguf, unetLoaderClass: 'UnetLoaderGGUF', clipLoaderClass: 'CLIPLoaderGGUF' }
+    }
+    return textEncoderBf16
+      ? { unet: unetGguf, textEncoder: textEncoderBf16, unetLoaderClass: 'UnetLoaderGGUF', clipLoaderClass: 'CLIPLoader' }
       : null
   }
 
@@ -105,7 +110,7 @@ function chooseModelFiles(
       ? textEncoderFp8 ?? textEncoderBf16
       : textEncoderBf16 ?? textEncoderFp8
 
-  return textEncoder ? { unet, textEncoder, unetLoaderClass: 'UNETLoader' } : null
+  return textEncoder ? { unet, textEncoder, unetLoaderClass: 'UNETLoader', clipLoaderClass: 'CLIPLoader' } : null
 }
 
 function getDevices(data: unknown): DeviceInfo[] {
@@ -150,17 +155,20 @@ async function getModelOptions(baseUrl: string): Promise<{
   unet: string[]
   unetGguf: string[]
   textEncoder: string[]
+  clipGguf: string[]
 }> {
-  const [unetInfo, clipInfo, ggufInfo] = await Promise.all([
+  const [unetInfo, clipInfo, ggufInfo, clipGgufInfo] = await Promise.all([
     fetchJson(baseUrl, '/object_info/UNETLoader'),
     fetchJson(baseUrl, '/object_info/CLIPLoader'),
     // ComfyUI-GGUF 커스텀 노드가 없으면 404 — 빈 목록으로 처리
     fetchJson(baseUrl, '/object_info/UnetLoaderGGUF').catch(() => null),
+    fetchJson(baseUrl, '/object_info/CLIPLoaderGGUF').catch(() => null),
   ])
   return {
     unet: getLoaderOptions(unetInfo, 'UNETLoader', 'unet_name'),
     unetGguf: getLoaderOptions(ggufInfo, 'UnetLoaderGGUF', 'unet_name'),
     textEncoder: getLoaderOptions(clipInfo, 'CLIPLoader', 'clip_name'),
+    clipGguf: getLoaderOptions(clipGgufInfo, 'CLIPLoaderGGUF', 'clip_name'),
   }
 }
 
@@ -308,10 +316,9 @@ export async function generateLocalImage(
     '1': files.unetLoaderClass === 'UnetLoaderGGUF'
       ? { class_type: 'UnetLoaderGGUF', inputs: { unet_name: files.unet } }
       : { class_type: 'UNETLoader', inputs: { unet_name: files.unet, weight_dtype: 'default' } },
-    '2': {
-      class_type: 'CLIPLoader',
-      inputs: { clip_name: files.textEncoder, type: 'lumina2', device: 'default' },
-    },
+    '2': files.clipLoaderClass === 'CLIPLoaderGGUF'
+      ? { class_type: 'CLIPLoaderGGUF', inputs: { clip_name: files.textEncoder, type: 'lumina2' } }
+      : { class_type: 'CLIPLoader', inputs: { clip_name: files.textEncoder, type: 'lumina2', device: 'default' } },
     '3': {
       class_type: 'VAELoader',
       inputs: { vae_name: ZIMAGE_FILES.vae },

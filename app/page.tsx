@@ -7,12 +7,13 @@ import { GenerationSurface } from '@/components/generation-surface'
 import { ModelPicker } from '@/components/model-picker'
 import { ConnectModal } from '@/components/connect-modal'
 import { useI18n } from '@/lib/i18n'
+import { isLocalModel } from '@/lib/local/model'
 import { useStudio } from '@/lib/studio'
 import type { Model } from '@/lib/types'
 
 export default function Studio() {
   const { t } = useI18n()
-  const { imageModels, videoModels, trending } = useStudio()
+  const { imageModels, videoModels, trending, connected } = useStudio()
   const [tab, setTab] = useState<Tab>('image')
   const [model, setModel] = useState<Model | null>(null)
   const [pickerOpen, setPickerOpen] = useState(false)
@@ -25,6 +26,17 @@ export default function Studio() {
     trending: t.hub.trendingTitle,
   }
   const currentList = lists[tab]
+
+  function useCloud() {
+    const cloudModel =
+      imageModels.find((candidate) => candidate.slug === 'gpt-image-2' && !candidate.is_coming_soon) ??
+      imageModels.find((candidate) => !isLocalModel(candidate) && !candidate.is_coming_soon)
+    if (cloudModel) {
+      setTab('image')
+      setModel(cloudModel)
+    }
+    if (!connected) setConnectOpen(true)
+  }
 
   // Preferred landing model per tab (falls back to first available slug)
   const defaultSlug = tab === 'image' ? 'gpt-image-2' : tab === 'video' ? 'seedance-2.0' : null
@@ -57,6 +69,7 @@ export default function Studio() {
               model={model}
               onOpenPicker={() => setPickerOpen(true)}
               onNeedConnect={() => setConnectOpen(true)}
+              onUseCloud={useCloud}
             />
           )}
         </main>

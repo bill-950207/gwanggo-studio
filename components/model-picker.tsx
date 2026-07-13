@@ -2,6 +2,8 @@
 
 import { useI18n } from '@/lib/i18n'
 import { creditRate } from '@/lib/catalog'
+import { isLocalModel } from '@/lib/local/model'
+import { useStudio } from '@/lib/studio'
 import { ModelThumb } from './model-visual'
 import type { Model } from '@/lib/types'
 
@@ -19,6 +21,7 @@ export function ModelPicker({
   onClose: () => void
 }) {
   const { t } = useI18n()
+  const { localState } = useStudio()
   if (!open) return null
 
   return (
@@ -31,6 +34,14 @@ export function ModelPicker({
             const soon = m.is_coming_soon
             const r = creditRate(m)
             const active = m.slug === current
+            const local = isLocalModel(m)
+            const localReady = localState.status === 'ready'
+            const localHint =
+              localState.status === 'checking'
+                ? t.local.checking
+                : localReady
+                  ? t.local.ready
+                  : t.local.setupNeeded
             return (
               <button
                 key={m.slug}
@@ -45,19 +56,43 @@ export function ModelPicker({
                     : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700'
                 }`}
               >
-                <ModelThumb model={m} className="aspect-[4/3]" />
+                <div className="relative">
+                  <ModelThumb model={m} className="aspect-[4/3]" />
+                  {local && (
+                    <span className="absolute top-2 right-2 rounded-md bg-neutral-900/85 dark:bg-white/90 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-white dark:text-neutral-900 shadow-sm backdrop-blur">
+                      {t.local.badge}
+                    </span>
+                  )}
+                </div>
                 <div className="p-2.5">
                   <div className="flex items-center justify-between gap-1">
                     <span className="text-sm font-semibold truncate">{m.name}</span>
-                    {r != null && (
+                    {local ? (
+                      <span className="shrink-0 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                        {t.local.free}
+                      </span>
+                    ) : r != null && (
                       <span className="shrink-0 text-[11px] font-mono text-neutral-400">
                         {r.perSecond ? `${r.rate}/s` : `${r.rate}cr`}
                       </span>
                     )}
                   </div>
-                  <div className="text-xs text-neutral-400 truncate">
-                    {t.hub.by} {m.creator}
-                  </div>
+                  {local ? (
+                    <div
+                      className={`mt-0.5 flex items-center gap-1.5 text-xs font-medium ${
+                        localReady
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : 'text-amber-600 dark:text-amber-400'
+                      }`}
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                      <span className="truncate">{localHint}</span>
+                    </div>
+                  ) : (
+                    <div className="text-xs text-neutral-400 truncate">
+                      {t.hub.by} {m.creator}
+                    </div>
+                  )}
                 </div>
               </button>
             )

@@ -4,12 +4,25 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { useI18n } from '@/lib/i18n'
 import { useStudio } from '@/lib/studio'
 import { api, ApiError, uploadFile, mediaUrl, thumbUrl } from '@/lib/api'
+import { HistoryGrid } from './history-grid'
+import { saveLocalGeneration } from '@/lib/local/history'
 import { gradientFor, creditCost } from '@/lib/catalog'
+import { generateLocalImage } from '@/lib/local/client'
+import { isLocalModel } from '@/lib/local/model'
+import type { LocalProgress } from '@/lib/local/types'
 import type { Model, Task, Example } from '@/lib/types'
-import { IconSparkle, IconChevronDown, IconImage, IconVideo } from './icons'
+import { IconSparkle, IconChevronDown, IconDownload, IconImage, IconVideo } from './icons'
+import { LocalFunnel } from './local-funnel'
 import { ModelLogo } from './model-visual'
 
-type Slot = { status: 'pending' | 'done' | 'error'; url?: string; error?: string }
+type Slot = {
+  status: 'pending' | 'done' | 'error'
+  url?: string
+  error?: string
+  progress?: string
+  seed?: number
+  aspectRatio?: number
+}
 
 interface FormField {
   type: string
@@ -30,23 +43,38 @@ const BODY_KEY: Record<string, string> = {
 
 const POLL_MS = 2500
 const MAX_POLLS = 200
+const LOCAL_ASPECT_FIELD: FormField = {
+  type: 'aspect_ratio',
+  options: ['1:1', '4:3', '3:4', '16:9', '9:16'],
+  default: '1:1',
+}
+const LOCAL_ASPECT_SIZES: Record<string, { width: number; height: number }> = {
+  '1:1': { width: 1024, height: 1024 },
+  '4:3': { width: 1152, height: 864 },
+  '3:4': { width: 864, height: 1152 },
+  '16:9': { width: 1344, height: 768 },
+  '9:16': { width: 768, height: 1344 },
+}
 
 export function GenerationSurface({
   model,
   onOpenPicker,
   onNeedConnect,
+  onUseCloud,
 }: {
   model: Model
   onOpenPicker: () => void
   onNeedConnect: () => void
+  onUseCloud: () => void
 }) {
   const { t } = useI18n()
-  const { connected, refreshMe, imageModels, videoModels } = useStudio()
+  const { connected, refreshMe, imageModels, videoModels, localState, refreshLocal } = useStudio()
   const isVideo = model.type === 'video'
+  const local = isLocalModel(model)
 
   const fields = useMemo<FormField[]>(
-    () => ((model.form_config?.fields as FormField[] | undefined) ?? []),
-    [model]
+    () => (local ? [LOCAL_ASPECT_FIELD] : ((model.form_config?.fields as FormField[] | undefined) ?? [])),
+    [local, model]
   )
   const controlFields = fields.filter((f) => f.type !== 'prompt' && f.type !== 'image_upload')
   const needsImage = fields.some((f) => f.type === 'image_upload' && f.required)
@@ -70,8 +98,14 @@ export function GenerationSurface({
   const [uploading, setUploading] = useState(false)
   const [uploadingVideo, setUploadingVideo] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+  const [currentCloudTaskId, setCurrentCloudTaskId] = useState<string>('')
+  const [localInProgressPrompt, setLocalInProgressPrompt] = useState<string>('')
+  const [localInProgressAspectRatio, setLocalInProgressAspectRatio] = useState<number | undefined>(undefined)
+  const [refreshToken, setRefreshToken] = useState(0)
   const videoRef = useRef<HTMLInputElement>(null)
   const [exs, setExs] = useState<Example[]>([])
+  const localObjectUrls = useRef(new Set<string>())
+  const localGenerationId = useRef(0)
 
   const hasVideoField = fields.some((f) => f.type === 'video_upload')
   const needsVideo = fields.some((f) => f.type === 'video_upload' && f.required)
@@ -90,6 +124,9 @@ export function GenerationSurface({
   useEffect(() => {
     let alive = true
     setExs([])
+    if (local) return () => {
+      alive = false
+    }
     api
       .examples(model.slug, 6)
       .then(({ examples }) => {
@@ -99,10 +136,13 @@ export function GenerationSurface({
     return () => {
       alive = false
     }
-  }, [model.slug])
+  }, [local, model.slug])
 
   // Reset controls to each model's defaults when the model changes.
   useEffect(() => {
+    localGenerationId.current += 1
+    for (const url of localObjectUrls.current) URL.revokeObjectURL(url)
+    localObjectUrls.current.clear()
     const init: Record<string, string | number | boolean> = {}
     for (const f of fields) {
       if (f.type === 'prompt' || f.type === 'image_upload') continue
@@ -114,6 +154,15 @@ export function GenerationSurface({
     setImageUrl('')
     setVideoUrl('')
   }, [model.slug, fields])
+
+  useEffect(
+    () => () => {
+      localGenerationId.current += 1
+      for (const url of localObjectUrls.current) URL.revokeObjectURL(url)
+      localObjectUrls.current.clear()
+    },
+    []
+  )
 
   const pollers = useRef<ReturnType<typeof setInterval>[]>([])
   useEffect(() => () => pollers.current.forEach(clearInterval), [])
@@ -169,8 +218,64 @@ export function GenerationSurface({
     try {
       const res = isVideo ? await api.generateVideo(body) : await api.generateImage(body)
       await poll(res.id, index)
+      setCurrentCloudTaskId(res.id)
     } catch (e) {
       handleError(e, index)
+    }
+  }
+
+  async function runLocal(index: number, generationId: number) {
+    const size = LOCAL_ASPECT_SIZES[String(values.aspect_ratio)] ?? LOCAL_ASPECT_SIZES['1:1']
+    const promptSnapshot = prompt.trim()
+    setLocalInProgressPrompt(promptSnapshot)
+    setLocalInProgressAspectRatio(size.width / size.height)
+    try {
+      const result = await generateLocalImage(
+        { prompt: prompt.trim(), ...size },
+        (progress: LocalProgress) => {
+          if (localGenerationId.current !== generationId) return
+          const progressLabel =
+            progress.phase === 'queued'
+              ? `${t.local.queued}${progress.position > 0 ? ` #${progress.position}` : ''}`
+              : t.local.running
+          if (progress.phase !== 'done') {
+            setSlot(index, {
+              status: 'pending',
+              progress: progressLabel,
+              aspectRatio: size.width / size.height,
+            })
+          }
+        }
+      )
+      if (localGenerationId.current !== generationId) {
+        URL.revokeObjectURL(result.objectUrl)
+        return
+      }
+      localObjectUrls.current.add(result.objectUrl)
+      setSlot(index, {
+        status: 'done',
+        url: result.objectUrl,
+        seed: result.seed,
+        aspectRatio: size.width / size.height,
+      })
+      // 로컬 생성물을 IndexedDB에 보존 — 새로고침 후에도 히스토리 그리드에 남는다
+      void saveLocalGeneration(
+        { id: globalThis.crypto.randomUUID(), prompt: promptSnapshot, width: size.width, height: size.height, seed: result.seed, createdAt: Date.now() },
+        result.blob
+      )
+      setLocalInProgressPrompt('')
+      setLocalInProgressAspectRatio(undefined)
+      setRefreshToken((prev) => prev + 1)
+    } catch (e) {
+      if (localGenerationId.current !== generationId) return
+      setSlot(index, {
+        status: 'error',
+        error: e instanceof Error ? e.message : t.ws.failed,
+        aspectRatio: size.width / size.height,
+      })
+      setLocalInProgressPrompt('')
+      setLocalInProgressAspectRatio(undefined)
+      void refreshLocal()
     }
   }
 
@@ -195,10 +300,13 @@ export function GenerationSurface({
         if (task.status === 'COMPLETED') {
           clearInterval(iv)
           setSlot(index, { status: 'done', url: task.result_url })
+          setCurrentCloudTaskId('')
+          setRefreshToken((prev) => prev + 1)
           refreshMe()
           resolve()
         } else if (task.status === 'FAILED') {
           clearInterval(iv)
+          setCurrentCloudTaskId('')
           setSlot(index, { status: 'error', error: task.error || t.ws.failed })
           refreshMe()
           resolve()
@@ -223,38 +331,61 @@ export function GenerationSurface({
       setSlot(index, { status: 'error', error: t.connect.lowCredits })
       return
     }
-    setSlot(index, { status: 'error', error: e instanceof ApiError ? e.message : t.ws.failed })
+    const message = e instanceof ApiError ? e.message : t.ws.failed
+    setError(message)
+    setSlot(index, { status: 'error', error: message })
   }
 
   function generate() {
-    if (!connected) return onNeedConnect()
+    if (!local && !connected) return onNeedConnect()
     if (!prompt.trim() || busy) return
     setError('')
     pollers.current.forEach(clearInterval)
     pollers.current = []
+    const generationId = local ? localGenerationId.current + 1 : 0
+    if (local) {
+      localGenerationId.current = generationId
+      for (const url of localObjectUrls.current) URL.revokeObjectURL(url)
+      localObjectUrls.current.clear()
+    }
     setSlots(Array.from({ length: count }, () => ({ status: 'pending' })))
-    for (let i = 0; i < count; i++) runOne(i)
+    for (let i = 0; i < count; i++) {
+      if (local) void runLocal(i, generationId)
+      else void runOne(i)
+    }
+  }
+
+  if (local && localState.status !== 'ready') {
+    return <LocalFunnel onUseCloud={onUseCloud} />
   }
 
   return (
     <div className="relative flex flex-col h-full">
       <div className="flex-1 overflow-y-auto px-6 pt-8 pb-44">
-        {slots.length === 0 ? (
-          <EmptyState model={model} shape={shape} exs={exs} fallbackThumbs={examples} />
-        ) : (
-          <div className={`mx-auto max-w-4xl grid gap-4 ${slots.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
-            {slots.map((s, i) => (
-              <ResultTile key={i} slot={s} model={model} hint={t.ws.generating} />
-            ))}
-          </div>
-        )}
+        <HistoryGrid
+          modelType={isVideo ? 'video' : 'image'}
+          currentCloudTask={
+            currentCloudTaskId
+              ? { id: currentCloudTaskId, status: 'IN_PROGRESS', model: model.name, prompt }
+              : undefined
+          }
+          localInProgress={
+            local && slots.some((slot) => slot.status === 'pending')
+              ? { seed: 0, prompt: localInProgressPrompt, aspectRatio: localInProgressAspectRatio }
+              : undefined
+          }
+          refreshToken={refreshToken}
+          empty={<EmptyState model={model} shape={shape} exs={exs} fallbackThumbs={examples} />}
+        />
       </div>
 
       <div className="absolute inset-x-0 bottom-0 px-4 pb-5 pointer-events-none">
         <div className="pointer-events-auto mx-auto max-w-4xl rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white/90 dark:bg-neutral-900/90 backdrop-blur shadow-xl shadow-black/5 dark:shadow-black/40">
           <div className="flex items-start gap-3 px-4 pt-3.5">
-            <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => doUpload(e, setImageUrl, setUploading)} />
-            {imageUrl ? (
+            {!local && (
+              <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => doUpload(e, setImageUrl, setUploading)} />
+            )}
+            {!local && (imageUrl ? (
               <div className="mt-0.5 relative w-9 h-9 rounded-lg overflow-hidden border border-neutral-200 dark:border-neutral-700 shrink-0 group/img">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={imageUrl} alt="" className="w-full h-full object-cover" />
@@ -282,7 +413,7 @@ export function GenerationSurface({
                   <IconImage className="w-4 h-4" />
                 )}
               </button>
-            )}
+            ))}
 
             {hasVideoField && (
               <>
@@ -370,10 +501,17 @@ export function GenerationSurface({
             <button onClick={generate} disabled={busy || !prompt.trim()} className="primary-btn shrink-0 self-end px-5 py-2.5 disabled:opacity-50">
               <IconSparkle className="w-4 h-4" />
               {t.ws.generate}
-              {cost != null && <span className="font-mono ml-0.5">{cost}</span>}
+              {local ? (
+                <span className="ml-0.5">{t.local.free}</span>
+              ) : (
+                cost != null && <span className="font-mono ml-0.5">{cost}</span>
+              )}
             </button>
           </div>
           {error && <p className="px-4 pb-3 -mt-1 text-xs text-red-600">{error}</p>}
+          {local && (
+            <p className="px-4 pb-3 -mt-1 text-[11px] text-neutral-400">{t.local.browserOnly}</p>
+          )}
         </div>
       </div>
     </div>
@@ -543,11 +681,27 @@ function EmptyState({
 }
 
 function ResultTile({ slot, model, hint }: { slot: Slot; model: Model; hint: string }) {
+  const { t } = useI18n()
   return (
-    <div className={`relative aspect-square rounded-2xl overflow-hidden border border-neutral-200 dark:border-neutral-800 ${slot.url ? 'bg-neutral-100 dark:bg-neutral-950' : `grain bg-gradient-to-br ${gradientFor(model.name)} opacity-90 dark:opacity-30`}`}>
+    <div
+      className={`relative ${slot.aspectRatio ? '' : 'aspect-square'} rounded-2xl overflow-hidden border border-neutral-200 dark:border-neutral-800 ${slot.url ? 'bg-neutral-100 dark:bg-neutral-950' : `grain bg-gradient-to-br ${gradientFor(model.name)} opacity-90 dark:opacity-30`}`}
+      style={slot.aspectRatio ? { aspectRatio: slot.aspectRatio } : undefined}
+    >
       {slot.status === 'done' && slot.url ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={slot.url} alt="" className="w-full h-full object-cover" />
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={slot.url} alt="" className="w-full h-full object-cover" />
+          {slot.seed !== undefined && (
+            <a
+              href={slot.url}
+              download={`gwanggo-local-${slot.seed}.png`}
+              className="absolute right-3 bottom-3 flex items-center gap-2 rounded-xl bg-white/90 dark:bg-neutral-900/90 px-3 py-2 text-xs font-semibold text-neutral-900 dark:text-white shadow-lg ring-1 ring-black/5 dark:ring-white/10 backdrop-blur hover:bg-white dark:hover:bg-neutral-900 transition"
+            >
+              <IconDownload className="w-4 h-4" />
+              {t.local.download}
+            </a>
+          )}
+        </>
       ) : (
         <div className="absolute inset-0 grid place-items-center">
           {slot.status === 'error' ? (
@@ -556,6 +710,11 @@ function ResultTile({ slot, model, hint }: { slot: Slot; model: Model; hint: str
             <div className="flex flex-col items-center gap-2 text-neutral-600/70 dark:text-neutral-400/70">
               <span className="w-5 h-5 rounded-full border-2 border-current border-t-transparent animate-spin" />
               <span className="text-xs">{hint}…</span>
+              {slot.progress && (
+                <span className="relative block w-24 h-1 overflow-hidden rounded-full bg-neutral-900/10 dark:bg-white/10">
+                  <span className="anim-prog absolute inset-y-0 left-0 rounded-full bg-current" />
+                </span>
+              )}
             </div>
           )}
         </div>

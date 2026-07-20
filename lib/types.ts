@@ -43,6 +43,27 @@ export interface GenerateResult {
   credits_used: number
 }
 
+/** /api/v1/generations 항목 — 토큰 소유자의 클라우드 생성 기록 */
+export interface CloudGeneration {
+  id: string
+  type: 'image' | 'video' | 'trending' | string
+  model: string
+  prompt: string | null
+  status: GenStatus
+  result_url: string | null
+  thumbnail_url: string | null
+  credits_used: number
+  created_at: string
+}
+
+export interface Paginated {
+  page: number
+  pageSize: number
+  totalCount: number
+  totalPages: number
+  hasMore: boolean
+}
+
 export interface Example {
   id: string
   model: string

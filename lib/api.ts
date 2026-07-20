@@ -1,5 +1,5 @@
 import { getKey } from './auth'
-import type { Model, Me, Task, GenerateResult, Example } from './types'
+import type { Model, Me, Task, GenerateResult, Example, CloudGeneration, Paginated } from './types'
 
 const BASE = process.env.NEXT_PUBLIC_API_URL || 'https://gwanggo.ai'
 
@@ -62,6 +62,10 @@ export const api = {
   generateVideo: (body: Record<string, unknown>) =>
     request<GenerateResult>('/api/v1/generate/video', { method: 'POST', body: JSON.stringify(body) }),
   task: (id: string) => request<Task>(`/api/v1/tasks/${encodeURIComponent(id)}`),
+  generations: (type?: 'image' | 'video' | 'trending', page = 1, pageSize = 24) =>
+    request<{ generations: CloudGeneration[]; pagination: Paginated }>(
+      `/api/v1/generations?page=${page}&pageSize=${pageSize}${type ? `&type=${type}` : ''}`
+    ),
   presign: (contentType: string, ext?: string) =>
     request<{ uploadUrl: string; publicUrl: string }>('/api/v1/upload', {
       method: 'POST',

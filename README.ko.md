@@ -87,7 +87,7 @@ npm run dev        # → http://localhost:3000
 
 **키 연결:** 아바타 클릭 → API 키 붙여넣기. 키는 **내 기기에만** 저장되며 Bearer 토큰으로만 전송됩니다.
 
-> 🔑 **키 발급:** [gwanggo.jocoding.io](https://gwanggo.jocoding.io?utm_source=github&utm_medium=readme) 로그인 → **API keys** → **Create**.
+> 🔑 **키 발급:** [gwanggo.ai](https://gwanggo.ai?utm_source=github&utm_medium=readme) 로그인 → **API keys** → **Create**.
 > 신규 가입 시 **무료 크레딧** 지급 — 이미지·영상 워크플로우 전체를 체험하기에 충분합니다.
 
 <br />
@@ -146,7 +146,7 @@ curl -fsSL https://raw.githubusercontent.com/bill-950207/gwanggo-studio/main/scr
 스튜디오 밖에서 직접 스크립트로 써도 됩니다 — 같은 키가 그대로 동작합니다:
 
 ```bash
-curl -X POST https://gwanggo.jocoding.io/api/v1/generate/image \
+curl -X POST https://gwanggo.ai/api/v1/generate/image \
   -H "Authorization: Bearer gwk_..." \
   -H "Content-Type: application/json" \
   -d '{"model": "gpt-image-2", "prompt": "네온 불빛 골목의 고양이, 시네마틱"}'
@@ -160,8 +160,8 @@ curl -X POST https://gwanggo.jocoding.io/api/v1/generate/image \
 
 | 변수                        | 기본값                                           | 용도                    |
 | --------------------------- | ------------------------------------------------ | ----------------------- |
-| `NEXT_PUBLIC_API_URL`       | `https://gwanggo.jocoding.io`                    | 생성 요청을 보낼 주소   |
-| `NEXT_PUBLIC_DASHBOARD_URL` | `https://gwanggo.jocoding.io/dashboard/api-keys` | "키 발급" 링크 목적지   |
+| `NEXT_PUBLIC_API_URL`       | `https://gwanggo.ai`                    | 생성 요청을 보낼 주소   |
+| `NEXT_PUBLIC_DASHBOARD_URL` | `https://gwanggo.ai/dashboard/api-keys` | "키 발급" 링크 목적지   |
 
 ## 🧱 스택
 

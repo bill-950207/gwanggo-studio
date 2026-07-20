@@ -87,7 +87,7 @@ That's it — no `.env` required. The studio points at the hosted Gwanggo API ou
 
 **Then connect your key:** click the avatar → paste your API key. It's stored **only on your device** and sent solely as a Bearer token.
 
-> 🔑 **Get a key:** sign in at [gwanggo.jocoding.io](https://gwanggo.jocoding.io?utm_source=github&utm_medium=readme) → **API keys** → **Create**.
+> 🔑 **Get a key:** sign in at [gwanggo.ai](https://gwanggo.ai?utm_source=github&utm_medium=readme) → **API keys** → **Create**.
 > New accounts get **free credits** — enough to try the full image & video workflow.
 
 <br />
@@ -146,7 +146,7 @@ The studio is a thin client over a clean REST API. Browsing the catalog is free 
 Script it directly if you want — the same key works outside the studio:
 
 ```bash
-curl -X POST https://gwanggo.jocoding.io/api/v1/generate/image \
+curl -X POST https://gwanggo.ai/api/v1/generate/image \
   -H "Authorization: Bearer gwk_..." \
   -H "Content-Type: application/json" \
   -d '{"model": "gpt-image-2", "prompt": "a neon-lit alley cat, cinematic"}'
@@ -160,8 +160,8 @@ Zero config needed. Override only if you self-host the backend:
 
 | Variable                    | Default                                          | Purpose                      |
 | --------------------------- | ------------------------------------------------ | ---------------------------- |
-| `NEXT_PUBLIC_API_URL`       | `https://gwanggo.jocoding.io`                    | Where generation requests go |
-| `NEXT_PUBLIC_DASHBOARD_URL` | `https://gwanggo.jocoding.io/dashboard/api-keys` | Where "Get a key" links to   |
+| `NEXT_PUBLIC_API_URL`       | `https://gwanggo.ai`                    | Where generation requests go |
+| `NEXT_PUBLIC_DASHBOARD_URL` | `https://gwanggo.ai/dashboard/api-keys` | Where "Get a key" links to   |
 
 ## 🧱 Stack
 

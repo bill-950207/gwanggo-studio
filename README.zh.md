@@ -87,7 +87,7 @@ npm run dev        # → http://localhost:3000
 
 **连接你的钥匙:** 点击头像 → 粘贴API密钥。密钥**只存储在你的设备上**,仅作为 Bearer 令牌发送。
 
-> 🔑 **获取密钥:** 登录 [gwanggo.jocoding.io](https://gwanggo.jocoding.io?utm_source=github&utm_medium=readme) → **API keys** → **Create**。
+> 🔑 **获取密钥:** 登录 [gwanggo.ai](https://gwanggo.ai?utm_source=github&utm_medium=readme) → **API keys** → **Create**。
 > 新账号赠送**免费积分** — 足够体验完整的图像·视频工作流。
 
 <br />
@@ -146,7 +146,7 @@ curl -fsSL https://raw.githubusercontent.com/bill-950207/gwanggo-studio/main/scr
 也可以直接用脚本调用 — 同一把钥匙在工作室之外照样能用:
 
 ```bash
-curl -X POST https://gwanggo.jocoding.io/api/v1/generate/image \
+curl -X POST https://gwanggo.ai/api/v1/generate/image \
   -H "Authorization: Bearer gwk_..." \
   -H "Content-Type: application/json" \
   -d '{"model": "gpt-image-2", "prompt": "霓虹小巷里的猫,电影感"}'
@@ -160,8 +160,8 @@ curl -X POST https://gwanggo.jocoding.io/api/v1/generate/image \
 
 | 变量                        | 默认值                                           | 用途               |
 | --------------------------- | ------------------------------------------------ | ------------------ |
-| `NEXT_PUBLIC_API_URL`       | `https://gwanggo.jocoding.io`                    | 生成请求的目标地址 |
-| `NEXT_PUBLIC_DASHBOARD_URL` | `https://gwanggo.jocoding.io/dashboard/api-keys` | "获取密钥"链接地址 |
+| `NEXT_PUBLIC_API_URL`       | `https://gwanggo.ai`                    | 生成请求的目标地址 |
+| `NEXT_PUBLIC_DASHBOARD_URL` | `https://gwanggo.ai/dashboard/api-keys` | "获取密钥"链接地址 |
 
 ## 🧱 技术栈
 

@@ -87,7 +87,7 @@ npm run dev        # → http://localhost:3000
 
 **キーを接続:** アバターをクリック → APIキーを貼り付け。キーは**あなたのデバイスにのみ**保存され、Bearerトークンとしてのみ送信されます。
 
-> 🔑 **キーの取得:** [gwanggo.jocoding.io](https://gwanggo.jocoding.io?utm_source=github&utm_medium=readme) にサインイン → **API keys** → **Create**。
+> 🔑 **キーの取得:** [gwanggo.ai](https://gwanggo.ai?utm_source=github&utm_medium=readme) にサインイン → **API keys** → **Create**。
 > 新規アカウントには**無料クレジット**付き — 画像・動画ワークフロー全体を試すのに十分です。
 
 <br />
@@ -146,7 +146,7 @@ curl -fsSL https://raw.githubusercontent.com/bill-950207/gwanggo-studio/main/scr
 スタジオの外から直接スクリプトで叩くこともできます — 同じキーがそのまま使えます:
 
 ```bash
-curl -X POST https://gwanggo.jocoding.io/api/v1/generate/image \
+curl -X POST https://gwanggo.ai/api/v1/generate/image \
   -H "Authorization: Bearer gwk_..." \
   -H "Content-Type: application/json" \
   -d '{"model": "gpt-image-2", "prompt": "ネオン輝く路地の猫、シネマティック"}'
@@ -160,8 +160,8 @@ curl -X POST https://gwanggo.jocoding.io/api/v1/generate/image \
 
 | 変数                        | デフォルト                                       | 用途                     |
 | --------------------------- | ------------------------------------------------ | ------------------------ |
-| `NEXT_PUBLIC_API_URL`       | `https://gwanggo.jocoding.io`                    | 生成リクエストの送信先   |
-| `NEXT_PUBLIC_DASHBOARD_URL` | `https://gwanggo.jocoding.io/dashboard/api-keys` | 「キーを取得」リンク先   |
+| `NEXT_PUBLIC_API_URL`       | `https://gwanggo.ai`                    | 生成リクエストの送信先   |
+| `NEXT_PUBLIC_DASHBOARD_URL` | `https://gwanggo.ai/dashboard/api-keys` | 「キーを取得」リンク先   |
 
 ## 🧱 スタック
 

@@ -40,7 +40,7 @@ spec_fail() {
   echo "$msg1"
   echo ""
   echo -e "${YELLOW}Cloud Alternative:${NC}"
-  echo "Visit https://gwanggo.jocoding.io to use gwanggo-studio with cloud generation"
+  echo "Visit https://gwanggo.ai to use gwanggo-studio with cloud generation"
   echo "Sign up with your API key and get 35 free credits / 무료 35크레딧 to get started"
   echo ""
   echo "$msg2"

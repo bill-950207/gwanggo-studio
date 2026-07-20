@@ -36,7 +36,7 @@ function Spec-Fail {
   Write-Host $Msg1
   Write-Host ""
   Write-Host "Cloud Alternative:" -ForegroundColor Yellow
-  Write-Host "Visit https://gwanggo.jocoding.io to use gwanggo-studio with cloud generation"
+  Write-Host "Visit https://gwanggo.ai to use gwanggo-studio with cloud generation"
   Write-Host "Sign up with your API key and get 35 free credits / 무료 35크레딧 to get started"
   Write-Host ""
   Write-Host $Msg2

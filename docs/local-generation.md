@@ -25,7 +25,7 @@ Local generation is supported on consumer-grade GPUs with sufficient VRAM:
 ### Cloud Alternative
 
 If your hardware doesn't meet requirements:
-- Visit [gwanggo.jocoding.io](https://gwanggo.jocoding.io)
+- Visit [gwanggo.ai](https://gwanggo.ai)
 - Sign up and get **35 free credits** to generate with cloud models
 - No hardware limits, faster generation (Seedream 4.5, etc.)
 
@@ -187,7 +187,7 @@ Then download models manually from [huggingface.co/Comfy-Org/z_image_turbo](http
 ## Cloud Fallback
 
 For images requiring higher quality, faster generation, or special effects:
-- Use [gwanggo.jocoding.io](https://gwanggo.jocoding.io) cloud models
+- Use [gwanggo.ai](https://gwanggo.ai) cloud models
 - Get 35 free credits on signup
 - No hardware limits, unlimited speed
 
